@@ -36,8 +36,11 @@ def get_messages(communityId:int, channelId:int, access_token: str=Depends(token
         new_msg:dict=json.loads(msg)
         if(uid==new_msg["sender_id"]):
             new_msg.update({"sender_id":"user"})
-        Print.blue(new_msg)
         new_messages.append(new_msg)
+
+    num_messages_in_redis=len(new_messages)
+    if num_messages_in_redis>0:
+        Print.blue(f"{num_messages_in_redis} messages retrieved from redis")
     
     messages=messages+new_messages
 

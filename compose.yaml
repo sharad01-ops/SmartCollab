@@ -42,8 +42,27 @@ services:
       - --port
       - "8000"
       - --reload
-
   
+
+  sfu-server:
+    build:
+      context: ./sfu-server
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "44444-44462:44444-44462/udp"
+      - "44444-44462:44444-44462/tcp"
+    # depends_on:
+    #   postgresdb:
+    #     condition: service_healthy
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./sfu-server:/usr/sfu-server/src/app
+      - sfu-server-node-modules-data:/usr/sfu-server/src/app/node_modules
+    command: sh -c "npm install && npm run dev"
+
+
   worker:
     build:
       context: ./backend
@@ -112,6 +131,7 @@ volumes:
   redis_data:
   pgdata:
   frontend-node-modules-data:
+  sfu-server-node-modules-data:
   postgresdb-data:
 
 secrets:

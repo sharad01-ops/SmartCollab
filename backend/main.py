@@ -63,13 +63,14 @@ from users.endpoints import router as users_router
 from communities.endpoints import router as communities_router
 from channels.endpoints import router as channels_router
 from chats.websockets import router as chats_ws_router
+from dev.endpoints import router as dev_router
 
 app.include_router(auth_router, prefix="/auth")
 app.include_router(users_router, prefix="/users")
 app.include_router(communities_router, prefix="/communities")
 app.include_router(channels_router, prefix="/channels")
 app.include_router(chats_ws_router, prefix="/ws")
-
+app.include_router(dev_router, prefix="/dev")
 
 def init_db():
     close_all_sessions()

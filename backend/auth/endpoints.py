@@ -102,7 +102,3 @@ def cors_test(access_token: str=Depends(token_verification)):
 def auto_login_user(refresh_token: str=Depends(refresh_token_check)):
     if refresh_token:
         return {"status": "ok"}
-
-
-
-

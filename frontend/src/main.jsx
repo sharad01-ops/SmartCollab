@@ -10,7 +10,8 @@ import { ChatLayout_Context_Provider } from './contexts/ChatLayout-context-provi
 import ErrorFallback from './pages/ErrorFallback'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 import { WebSockets_ContextProvider } from './contexts/WebSockets-context-provider'
-
+import { Global_ContextProvider } from './contexts/Global-context-provider'
+import VideoCallSection from './pages/Chat/VideoCallSection'
 
 const query_client=new QueryClient()
 
@@ -18,7 +19,9 @@ const query_client=new QueryClient()
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <Home />,
+    element: 
+      <Home />
+    ,
   },
   {
     path: "/login",
@@ -41,9 +44,12 @@ const router = createBrowserRouter([
         element: 
         <WebSockets_ContextProvider>
           <ChatMessagesSection />
-        </WebSockets_ContextProvider>
-        ,
+        </WebSockets_ContextProvider>,
       },
+      {
+        path:":channelId/videocall",
+        element: <VideoCallSection/>
+      }
     ]
     ,
 
@@ -51,7 +57,8 @@ const router = createBrowserRouter([
 ])
 
 createRoot(document.getElementById('root')).render(
-
-    <RouterProvider router={router} />
+    <Global_ContextProvider>
+      <RouterProvider router={router} />
+    </Global_ContextProvider>
   
 )

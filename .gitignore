@@ -4,6 +4,9 @@ __pycache__
 \.env
 secrets
 
+#keys and certificates
+cert
+
 # Logs
 logs
 *.log

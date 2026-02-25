@@ -99,7 +99,7 @@ async function SendRefreshRequest(){
 
 
 
-async function SendFetchRequest(
+export async function SendFetchRequest(
     endpoint,
     options,
 ) {

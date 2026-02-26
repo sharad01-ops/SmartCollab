@@ -5,10 +5,10 @@ class WebRTCAPI{
 
     stream=null
     device=null
+    producerids=[]
 
     async getLocalStream(){
         await navigator.mediaDevices.getUserMedia({
-            audio: true,
             video:{
                 width:{
                     min: 640,
@@ -61,6 +61,15 @@ class WebRTCAPI{
         try{
             const sendTransport=this.device.createSendTransport(transportParams)
             return sendTransport
+        }catch(e){
+            throw e
+        }
+    }
+
+    create_RecvTransport(transportParams){
+        try{
+            const recvTransport=this.device.createRecvTransport(transportParams)
+            return recvTransport
         }catch(e){
             throw e
         }

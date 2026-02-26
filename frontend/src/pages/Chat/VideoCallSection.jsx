@@ -37,6 +37,7 @@ const Footer=()=>{
 
 const VideoPanel=()=>{
     const LocalVideoRef=useRef(null)
+    const RemoteVideoRef=useRef(null)
     const url_params=useParams()
     useEffect(()=>{
         if(!socketio_client) return
@@ -44,6 +45,8 @@ const VideoPanel=()=>{
         console.log("mounted")
         socketio_client.on("getRtpCapabilities",LogRtpCapabilities)
         socketio_client.on("createSendTransport", LogTransportParams)
+
+        socketio_client.on("createRecvTransport", createRecieveTransport)
 
         return ()=>socketio_client.disconnect()
     },[])
@@ -54,6 +57,12 @@ const VideoPanel=()=>{
         LocalVideoRef.current.srcObject=webrtc_client.stream
     }
 
+    const mountRemoteVideo=(stream)=>{
+        if(!RemoteVideoRef.current || !stream) return
+
+        RemoteVideoRef.current.srcObject=stream
+    }
+
 
     const LogRtpCapabilities=async (capabilities)=>{
         if(!webrtc_client) return
@@ -62,6 +71,20 @@ const VideoPanel=()=>{
         try{
             const device_rtpcap=await webrtc_client.create_device(capabilities)
             console.log(chalk.green("device rtpCapabilities: "),device_rtpcap)
+
+            socketio_client.on(
+                "createConsumer", 
+                ()=>{
+                    socketio_client.emit(
+                        "createWebRtcTransport-recv", 
+                        {
+                            communityId     :url_params.communityId, 
+                            channelId       :url_params.channelId, 
+                            rtpCapabilities :device_rtpcap
+                        }
+                    )
+                }
+            )
             
             if(!socketio_client) return
             socketio_client.emit("createWebRtcTransport", {communityId:url_params.communityId, channelId:url_params.channelId})
@@ -76,28 +99,40 @@ const VideoPanel=()=>{
 
     const LogTransportParams=async (params)=>{
 
-        const cb=()=>{console.log(chalk.magenta("connect callback called"))}
-
         try{
 
             const sendTransport=webrtc_client.create_SendTransport(params)
 
             sendTransport.on("connect", ({dtlsParameters}, callback, errback )=>{
-                socketio_client.socket.emit("connectSendTransport", 
+                socketio_client.emit("connectSendTransport", 
                     {dtlsParameters}, 
                     (response)=>{
                         console.log(chalk.magenta("Calling Callback"))
                         if (response?.error) {
                             errback(response.error);
                         } else {
-                            callback();   // 🔥 THIS IS REQUIRED
+                            callback();
                         }
                     })
             })
 
             sendTransport.on("produce", (parameters, callback, errback)=>{
-                console.log(chalk.magenta("producer started, rtpParameters: "),parameters)
-                // socketio_client.emit("connectSendTransport", {dtlsParameters})
+                socketio_client.emit("transport-produce", 
+                    {
+                        kind          : parameters.kind,
+                        rtpParameters : parameters.rtpParameters,
+                        appData       : parameters.appData
+                    },
+                    (response)=>{
+                        console.log(chalk.magenta("Calling transport-produce Callback"))
+                        if (response?.error || !response?.producerid) {
+                            errback(response.error);
+                        } else {
+                            webrtc_client.producerids.push(response.producerid)
+                            callback({id:response.producerid});
+                        }
+                    }
+                )
             })
 
             sendTransport.on("connectionstatechange", (state) => {
@@ -135,6 +170,65 @@ const VideoPanel=()=>{
         }
     }
 
+    const createRecieveTransport=async (params)=>{
+        if(!webrtc_client || !webrtc_client.device) return
+        
+        try{
+            const recvTransport=webrtc_client.create_RecvTransport(params)
+
+            console.log(chalk.blue("created recieve transport"))
+
+            recvTransport.on("connect", ({dtlsParameters}, callback, errback )=>{
+
+                socketio_client.emit("connectRecvTransport", 
+                    {dtlsParameters}, 
+                    (response)=>{
+                        console.log(chalk.blue("Calling Recv Callback"))
+                        if (response?.error) {
+                            errback(response.error);
+                        } else {
+                            callback();
+                        }
+                    })
+            })
+
+
+            recvTransport.on("connectionstatechange", (state) => {
+                console.log(chalk.blue("Recv transport state:"), state);
+            });
+
+            // recvTransport.on("icegatheringstatechange", state => {
+            //     console.log(chalk.magenta("ICE gathering:"), state);
+            // });
+
+            // recvTransport.on("iceconnectionstatechange", (state) => {
+            //     console.log(chalk.magenta("ICE connection state:"), state);
+            // });
+
+            socketio_client.on("getConsumers",async (consumers)=>{
+                const streams=[]
+                for(const consumer_props of consumers){
+                    const {consumerid, producerid, kind, rtpParameters}=consumer_props
+                    const consumer = await recvTransport.consume(
+                        {
+                            id            : consumerid,
+                            producerId    : producerid,
+                            kind          : kind,
+                            rtpParameters : rtpParameters
+                        });
+                    const stream=new MediaStream()
+                    stream.addTrack(consumer.track)
+                    streams.push(stream)
+                }
+                mountRemoteVideo(streams[0])
+
+            })
+
+        }catch(e){
+            console.log(e)
+        }
+
+    }
     
     return(
         <div className="w-full h-full bg-amber-300">
@@ -166,9 +260,10 @@ const VideoPanel=()=>{
                 </button>
             </div>
             <div
-                className="w-full flex flex-row bg-green-500 justify-center items-center"
+                className="w-full flex flex-col bg-green-500 justify-center"
             >
                 <video ref={LocalVideoRef} id="LocalVideo" autoPlay className="video"></video>
+                <video ref={RemoteVideoRef} id="RemoteVideo" autoPlay className="video"></video>
             </div>
         </div>
     )

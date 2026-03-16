@@ -1,15 +1,16 @@
 from redis.asyncio import Redis
 from utilities.colour_print import Print
+import asyncio
 
-
-async def get_redis_client(host='localhost', port=6379, password=None):
+async def get_redis_client(host, port, username, password):
     try:
         # Create a connection to the Redis server
         redis_client = Redis(
             host=host,
             port=port,
             password=password,
-            decode_responses=True  # Decode responses to UTF-8, if needed
+            decode_responses=True,  # Decode responses to UTF-8, if needed
+            username=username
         )
         
         # Ping the server to check the connection
@@ -22,14 +23,15 @@ async def get_redis_client(host='localhost', port=6379, password=None):
 
 
 class async_RedisAPI():
-    def __init__(self, host='localhost', port=6379, password=None):
+    def __init__(self, host, port, username, password):
         self.redis_client:Redis|None=None
         self.host=host
         self.port=port
         self.password=password
+        self.username=username
     
     async def connect(self):
-        self.redis_client=await get_redis_client(host=self.host, port=self.port, password=self.password)
+        self.redis_client=await get_redis_client(host=self.host, port=self.port, username=self.username, password=self.password)
 
     # Publish a message to a stream
     async def publish_to_stream(self, stream_name, message):
@@ -51,6 +53,10 @@ class async_RedisAPI():
         try:
             messages=await self.redis_client.xreadgroup(consumer_group_name, consumer_name, {stream_name: '>'}, count=count, block=block_time)
             return messages
+        except asyncio.CancelledError:
+            Print.red(f'reading from {stream_name} failed due to cancellation')
+            return None
+
         except Exception as e:
             Print.red(e)
             return None

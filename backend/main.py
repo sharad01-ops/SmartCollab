@@ -11,24 +11,32 @@ from utilities.colour_print import Print
 from chats.async_redis_operations import async_RedisAPI
 from chats.redis_operations import RedisAPI
 import core
+from dotenv import load_dotenv
+import os
 # tables_to_create_on_init=[ database_models.Communties.__table__, database_models.Users.__table__ ]
 
 # database_models.Base.metadata.create_all(bind=engine, tables=tables_to_create_on_init)
 
+load_dotenv()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     core.async_redis_api=async_RedisAPI(
-        host="redis",
-        port=6379,
-        password="mysecretpassword"
+        host=os.getenv("REDIS_HOST"),
+        port=os.getenv("REDIS_PORT"),
+        password=os.getenv("REDIS_PASSWORD"),
+        username=os.getenv("REDIS_USERNAME")
     )
 
     core.redis_api=RedisAPI(
-        host="redis",
-        port=6379,
-        password="mysecretpassword"
+        host=os.getenv("REDIS_HOST"),
+        port=os.getenv("REDIS_PORT"),
+        password=os.getenv("REDIS_PASSWORD"),
+        username=os.getenv("REDIS_USERNAME")
     )
 
+    core.redis_api.connect()
     await core.async_redis_api.connect()
     await core.async_redis_api.create_consumer_group(
         stream_name="chat_broadcast", 
@@ -40,6 +48,7 @@ async def lifespan(app: FastAPI):
 
     await core.async_redis_api.close_connection()
     core.async_redis_api=None
+    core.async_redis_api_online=False
     core.redis_api.close_connection()
 
 

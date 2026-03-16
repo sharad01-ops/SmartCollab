@@ -4,7 +4,7 @@ from utilities.colour_print import Print
 import json
 from chats.WSClient import WSClient
 import core
-
+import sys
 
 
 router=APIRouter()
@@ -33,37 +33,43 @@ async def Broadcaster():
         if core.async_redis_api_online==False:
             await asyncio.sleep(1)
         else:
-            if await core.async_redis_api.redis_client.exists("chat_broadcast"):
+            try:
+                if await core.async_redis_api.redis_client.exists("chat_broadcast"):
 
-                messages = await core.async_redis_api.redis_client.xreadgroup(
-                        groupname="broadcast_consumers",
-                        consumername="broadcast_consumer_1",
-                        streams={"chat_broadcast": ">"},
-                        block=0,
-                    )
-                if messages is not None:
-                    for _, entries in messages:
-                        for msg_id, data in entries:
-                            rooms=manager.Rooms
-                            community_id, channel_id=data["community_id"], data["channel_id"]
-                            room_id=f"{community_id}{channel_id}"
-                            if room_id in rooms:
-                                for uid in rooms[f"{community_id}{channel_id}"]:
-                                    try:
-                                        # Print.green(f"added message {data} to send_queue")
-                                        manager.active_connections[uid].send_queue.put_nowait(data)
-                                    except asyncio.QueueFull as e:
-                                        Print.red("Sender Queue Full, cant broadcast message")
-                                    except Exception as e:
-                                        Print.red(f"Error: {e} \n cant broadcast message")
+                    messages = await core.async_redis_api.redis_client.xreadgroup(
+                            groupname="broadcast_consumers",
+                            consumername="broadcast_consumer_1",
+                            streams={"chat_broadcast": ">"},
+                            block=0,
+                        )
+                    if messages is not None:
+                        for _, entries in messages:
+                            for msg_id, data in entries:
+                                rooms=manager.Rooms
+                                community_id, channel_id=data["community_id"], data["channel_id"]
+                                room_id=f"{community_id}{channel_id}"
+                                if room_id in rooms:
+                                    for uid in rooms[f"{community_id}{channel_id}"]:
+                                        try:
+                                            # Print.green(f"added message {data} to send_queue")
+                                            manager.active_connections[uid].send_queue.put_nowait(data)
+                                        except asyncio.QueueFull as e:
+                                            Print.red("Sender Queue Full, cant broadcast message")
+                                        except Exception as e:
+                                            Print.red(f"Error: {e} \n cant broadcast message")
+                    else:
+                        Print.yellow("No messages in stream")
+                        await asyncio.sleep(1)
                 else:
-                    Print.yellow("No messages in stream")
+                    #sleep for 1 sec if stream doesnt exist, just passing would consume cpu resources
+                    Print.yellow("Broadcaster running,but stream does not exist")
                     await asyncio.sleep(1)
-            else:
-                #sleep for 1 sec if stream doesnt exist, just passing would consume cpu resources
-                Print.yellow("Broadcaster running,but stream does not exist")
-                await asyncio.sleep(1)
-
+            except asyncio.CancelledError as e:
+                Print.red("Broadcaster Stopped Due to Cancellation")
+                break
+            except Exception as e:
+                Print.red(e)
+                raise e
 
 
 

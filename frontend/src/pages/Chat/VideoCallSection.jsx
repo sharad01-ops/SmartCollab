@@ -231,7 +231,7 @@ const VideoPanel=()=>{
     }
     
     return(
-        <div className="w-full h-full bg-amber-300">
+        <div className="w-full h-full bg-amber-300 min-h-0 overflow-auto">
             <div className="flex flex-col w-fit">
                 <button
                     className="bg-black text-white rounded-2xl px-3 py-1 m-1 hover:bg-gray-800"

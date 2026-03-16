@@ -1,7 +1,14 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, ForeignKeyConstraint, BigInteger
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, ForeignKeyConstraint, BigInteger, MetaData
 from sqlalchemy.ext.declarative import declarative_base
+from dotenv import load_dotenv
+import os
 
-Base = declarative_base()
+load_dotenv()
+
+DATABASE_SCHEMA=os.getenv("POSTGRESDB_SCHEMA")
+
+metadata = MetaData(schema=DATABASE_SCHEMA)
+Base = declarative_base(metadata=metadata)
 
 
 #contains all the users

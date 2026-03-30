@@ -1,22 +1,12 @@
-
-
-const UserProfile = ({username,email}) => {
+const UserProfile = ({ username, email }) => {
   return (
-        <div
-            className='
-            bg-amber-500 w-full aspect-square max-w-[100px]
-            flex flex-col items-center justify-center
-            rounded-[0.4rem]
-            '
-          >
-            <div
-            className='leading-[1.069rem] 
-            mt-[0.2rem] text-[1.5rem]  font-[Inter] font-[1000] 
-            min-h-0 min-w-0'
-            >
-              {username[0]?.toUpperCase()}
-            </div>
-        </div>
+    <div className="relative w-8 h-8">
+      <div className="w-8 h-8 rounded-full bg-[var(--sc-accent)] flex items-center justify-center text-white text-xs font-semibold cursor-pointer select-none">
+        {username?.[0]?.toUpperCase() ?? '?'}
+      </div>
+      {/* Online indicator */}
+      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[var(--sc-success)] border-2 border-[var(--sc-bg-secondary)]" />
+    </div>
   )
 }
 

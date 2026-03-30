@@ -1,188 +1,152 @@
+import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { Loader2 } from "lucide-react"
 import { useAuth } from "../hooks/user_hooks"
-import { useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
-import { get_all_user_credentials } from "../services/dev_services";
-import chalk from "chalk";
+import { get_all_user_credentials } from "../services/dev_services"
 
-const DEV_KEY=import.meta.env.VITE_DEV_MODE_KEY
+const DEV_KEY = import.meta.env.VITE_DEV_MODE_KEY
 
+const Show_Demo_Creds = ({ users_list, onSelect }) => {
+  if (!users_list || users_list.length === 0) return null
 
-const Show_Demo_Creds=({users_creds, username_input_ref, email_input_ref, password_input_ref})=>{
-  if(!DEV_KEY || !users_creds) return null;
-
-  const fill_form=(user_name, user_email, user_password)=>{
-    if(!username_input_ref.current
-      || !email_input_ref.current
-      || !password_input_ref.current
-    ) return
-
-    username_input_ref.current.value=user_name
-    email_input_ref.current.value=user_email
-    password_input_ref.current.value=user_password
-  }
-  return(
-    <div
-      className={`
-      grid grid-cols-3 max-h-[100px] 
-      overflow-y-auto
-      absolute top-0 backdrop-blur-sm border-2 m-2 rounded-lg`}
-    >
-      {
-        users_creds.map((credentials, index)=>{
-          return(
-            <div
-              key={index}
-              className="bg-black hover:bg-gray-100 hover:text-black 
-              my-3 text-white  select-none mx-1 w-fit flex flex-row  py-0.5 px-5 rounded-full"
-              onClick={()=>{
-                fill_form(credentials.user_name, credentials.user_email, credentials.user_password);
-              }}
-            >
-              {credentials.user_name}
-            </div>
-          )
-        })
-      }
+  return (
+    <div className="fixed top-4 left-4 z-50 bg-[var(--sc-bg-elevated)] border border-[var(--sc-border)] rounded-xl p-3 shadow-sm">
+      <p className="text-[10px] font-medium text-[var(--sc-text-muted)] uppercase tracking-wider mb-2">
+        Demo Accounts
+      </p>
+      <div className="grid grid-cols-2 gap-1 max-h-[200px] overflow-y-auto">
+        {users_list.map((user, i) => (
+          <div
+            key={i}
+            onClick={() => onSelect && onSelect(user)}
+            className="bg-[var(--sc-bg-secondary)] hover:bg-[var(--sc-accent-subtle)] hover:text-[var(--sc-accent)] text-[var(--sc-text-secondary)] text-xs px-3 py-1.5 rounded-md cursor-pointer transition-colors select-none"
+          >
+            {user.username}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
 
-
-
-
-
-
 const Login = () => {
-  
-  const navigate=useNavigate()
-  const {
-        AutoLogin_user,
-        handleLogin,
-        login_loading,
-    }=useAuth()
+  const navigate = useNavigate()
+  const { AutoLogin_user, handleLogin, login_loading } = useAuth()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [users_list, setUsers_list] = useState([])
 
-  const [isAuthenticated, setIsAuthenticated]=useState(false)
-  const [users_list,set_users_list]=useState(null)
+  const usernameRef = useRef(null)
+  const emailRef = useRef(null)
+  const passwordRef = useRef(null)
 
-  const username_input_ref=useRef(null)
-  const useremail_input_ref=useRef(null)
-  const userpassword_input_ref=useRef(null)
+  useEffect(() => {
+    AutoLogin_user().then(authenticated => {
+      if (authenticated) navigate('/chats')
+    }).catch(() => {})
 
-  if(DEV_KEY){
-    useEffect(()=>{
-      get_all_user_credentials(DEV_KEY)
-      .then((res)=>{
-        const user_cred_list=res?.user_credentials 
-        if(Array.isArray(user_cred_list)){
-          set_users_list(user_cred_list)
-        }
-
-      }).catch((err)=>{
-        console.error("Error in dev get:",err)
-      })
-    },[])
-  }
-  
-  const handleFormSubmision= (formData)=>{
-    const username=formData.get("username")
-    const email=formData.get("email")
-    const password=formData.get("password")
-    console.log(`
-        Username: ${username}
-        Email: ${email}
-        Password: ${password}
-      `)  
-
-      handleLogin({
-        username: username, 
-        email: email, 
-        password: password
-      }).then((login_result)=>{
-
-        console.log( `Login Result:`,login_result )
-        if(login_result.AccessToken){
-          setIsAuthenticated(true)
-        }
-
-      }).catch((e)=>{
-
-        setIsAuthenticated(false) 
-        console.error(e)
-
-      })
-
-  }
-
-
-
-  useEffect( ()=>{
-
-    //redirect user if refresh token exists
-    AutoLogin_user().then(
-      ()=>{
-        navigate("/chats")
-      }
-    ).catch((e)=>{
-    })
-
-    if(isAuthenticated){
-      console.log("User Authenticate, navigating to chats")
-      navigate("/chats")
-    }else{
-      console.log("user not authenticated")
+    if (DEV_KEY === 'dev') {
+      get_all_user_credentials().then(data => {
+        setUsers_list(data?.user_credentials ?? [])
+      }).catch(() => {})
     }
+  }, [])
 
-  },[isAuthenticated] )
+  useEffect(() => {
+    if (isAuthenticated) navigate('/chats')
+  }, [isAuthenticated])
 
+  // Note: typo preserved from original — handleFormSubmision
+  const handleFormSubmision = async (formData) => {
+    const username = formData.get('username')
+    const email = formData.get('email')
+    const password = formData.get('password')
+    const result = await handleLogin({ username, email, password })
+    if (result) setIsAuthenticated(true)
+  }
 
+  const handleDemoSelect = (user) => {
+    if (usernameRef.current) usernameRef.current.value = user.username ?? ''
+    if (emailRef.current) emailRef.current.value = user.email ?? ''
+    if (passwordRef.current) passwordRef.current.value = user.password ?? ''
+  }
 
   return (
-    <div>
-      { users_list &&
-        <Show_Demo_Creds
-          users_creds={users_list}
-          username_input_ref={username_input_ref}
-          email_input_ref={useremail_input_ref}
-          password_input_ref={userpassword_input_ref}
-        />
-      }
-      <div className='h-screen w-full bg-gray-700 flex flex-row justify-center items-center'>
+    <div className="h-screen w-full bg-[var(--sc-bg-primary)] flex items-center justify-center font-[Inter]">
 
-          <form action={handleFormSubmision}
-            className='bg-red-400 rounded-[10px] flex flex-col justify-center items-center p-6 max-h-[500px] h-full w-full m-5 max-w-[500px]'
+      {/* Demo credentials panel */}
+      {DEV_KEY === 'dev' && (
+        <Show_Demo_Creds users_list={users_list} onSelect={handleDemoSelect} />
+      )}
+
+      {/* Login card */}
+      <div className="bg-[var(--sc-bg-elevated)] border border-[var(--sc-border)] rounded-xl p-8 w-full max-w-[380px] shadow-sm">
+
+        {/* Wordmark */}
+        <p className="font-[Jersey10Regular] text-2xl text-[var(--sc-accent)] mb-1 text-center">
+          SmartCollab
+        </p>
+        <p className="text-[var(--sc-text-muted)] text-sm text-center mb-6">
+          Sign in to your workspace
+        </p>
+
+        {/* Form */}
+        <form action={handleFormSubmision}>
+          <div className="space-y-4 mb-6">
+
+            {/* Username */}
+            <div>
+              <label className="block text-xs font-medium text-[var(--sc-text-secondary)] mb-1">
+                Username
+              </label>
+              <input
+                ref={usernameRef}
+                type="text"
+                name="username"
+                placeholder="your_username"
+                className="w-full h-9 px-3 rounded-lg bg-[var(--sc-bg-secondary)] border border-[var(--sc-border)] text-[var(--sc-text-primary)] text-sm placeholder:text-[var(--sc-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--sc-accent)] focus:border-transparent transition-shadow"
+              />
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block text-xs font-medium text-[var(--sc-text-secondary)] mb-1">
+                Email
+              </label>
+              <input
+                ref={emailRef}
+                type="email"
+                name="email"
+                placeholder="you@example.com"
+                className="w-full h-9 px-3 rounded-lg bg-[var(--sc-bg-secondary)] border border-[var(--sc-border)] text-[var(--sc-text-primary)] text-sm placeholder:text-[var(--sc-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--sc-accent)] focus:border-transparent transition-shadow"
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-xs font-medium text-[var(--sc-text-secondary)] mb-1">
+                Password
+              </label>
+              <input
+                ref={passwordRef}
+                type="password"
+                name="password"
+                placeholder="••••••••"
+                className="w-full h-9 px-3 rounded-lg bg-[var(--sc-bg-secondary)] border border-[var(--sc-border)] text-[var(--sc-text-primary)] text-sm placeholder:text-[var(--sc-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--sc-accent)] focus:border-transparent transition-shadow"
+              />
+            </div>
+
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={login_loading}
+            className="w-full h-9 bg-[var(--sc-accent)] hover:bg-[var(--sc-accent-hover)] text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-
-            <input name="username" ref={username_input_ref}
-            className='bg-white rounded-[10px] p-3 my-2 w-full text-[0.9rem] leading-[0.9rem]'
-            type="text" placeholder='Enter Username'/>
-            
-            <input name="email" ref={useremail_input_ref}
-            className='bg-white rounded-[10px] p-3 my-2 w-full text-[0.9rem] leading-[0.9rem]'
-            type="text" placeholder='Enter Email'/>
-
-            <input name="password" ref={userpassword_input_ref}
-            className='bg-white rounded-[10px] p-3 my-2 w-full text-[0.9rem] leading-[0.9rem]'
-            type="text" placeholder='Enter Password'/>
-
-            <button type="submit" className='bg-black my-3  w-fit flex flex-row  py-0.5 px-5 rounded-full'
-                >
-                  <Loader2 className={` text-white w-[0.9rem] h-[0.9rem] mr-2 my-auto animate-spin ${login_loading? "block":"hidden"}`}/>
-                  <div className='text-white text-[0.9rem] leading-[1.5rem] mb-0.5'>
-                    Login
-                  </div>
-            </button>
-
-            {/* <button className='bg-black my-3  w-fit  py-0.5 px-5 rounded-full' type="button"
-            onClick={()=>{Login_test()}}
-                >
-                  <div className='text-white text-[0.9rem] leading-[1.5rem] mb-0.5'>
-                    Test
-                  </div>
-            </button> */}
-          
-          </form>
-
+            {login_loading && <Loader2 className="w-4 h-4 animate-spin text-white" />}
+            Sign In
+          </button>
+        </form>
 
       </div>
     </div>

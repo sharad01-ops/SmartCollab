@@ -1,73 +1,68 @@
-import { useParams } from "react-router-dom"
-import ChannelTag from "./ChannelsPanel Components/ChannelTag"
-import { useQuery } from "@tanstack/react-query"
-import { get_community_channels } from "../../../services/community_services"
+import { useContext, useRef, useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { ChatLayout_Context } from "../../../contexts/ChatLayout-context-provider"
+import { useCommunityInfo } from "../../../hooks/community_hooks"
+import { useAsyncError } from "../../../hooks/ErrorHooks"
 import ScrollBar from "../../common components/ScrollBar"
-import { useRef } from "react"
-
+import ChannelTag from "./ChannelsPanel Components/ChannelTag"
 
 const ChannelsPanel = () => {
-  const {communityId} = useParams()
-  const scrollbarRef=useRef(null)
+  const { communityId } = useParams()
+  const { channelFilter, setCommunityChannelMap } = useContext(ChatLayout_Context)
+  const scrollbarRef = useRef(null)
+  const throwError = useAsyncError()
 
-  const {data, isLoading, isError, error}=useQuery({
-    queryKey:["community_channels", communityId],
-    queryFn: ()=>{return get_community_channels(communityId)},
-    enabled:!!communityId,
-    retry: false,
-    staleTime:1000*60*5
-  })
+  const { getCommunityChannels, loading_channels } = useCommunityInfo()
+  const [channels, setChannels] = useState([])
 
+  useEffect(() => {
+    if (!communityId) return
+    getCommunityChannels(communityId)
+      .then((data) => {
+        const list = data?.Channels ?? []
+        setChannels(list)
+        if (list.length > 0) {
+          setCommunityChannelMap(prev => ({
+            ...prev,
+            [communityId]: list[0].channel_id,
+          }))
+        }
+      })
+      .catch((e) => throwError(e))
+  }, [communityId])
 
-
-  if(isError){
-    if(error.status==403){
-      throw error
-    }
-    console.log(error.status)
-  }
-
-
-  if(isLoading && communityId){
-    return(
-      <div className="w-full h-full font-[Inter] text-white bg-[#363535]">
-        ...Loading Channels
-      </div>
-    )
-  }
+  const filteredChannels = channels.filter(ch =>
+    !channelFilter || ch.channel_name.toLowerCase().includes(channelFilter.toLowerCase())
+  )
 
   return (
-      <div className='bg-[#363535] w-full h-full flex overflow-y-hidden'>
-        <ScrollBar ref={scrollbarRef}>
-          { 
-          data && Array.isArray(data.Channels) && (
-              data.Channels.map( (channel, index)=>{
-                return(
-                  <ChannelTag
-                    key={index}
-                    channel_name={channel.channel_name}
-                    channel_id={channel.channel_id}
-                  />
-                )
-              } )
-            )
-          }
+    <div className="bg-[var(--sc-bg-secondary)] w-full h-full flex flex-col overflow-hidden">
 
-          {/* {
-            Array.from({length:20}, (v,i)=>{return i}).map( (elem, index)=>{
-              return(
-                  <ChannelTag
-                    key={index}
-                    channel_name={"some name"}
-                    channel_id={"some id"}
-                  />
-                )
-            } )
-          } */}
-          
-      </ScrollBar>
+      <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--sc-text-muted)] flex-shrink-0">
+        Channels
+      </p>
+
+      {loading_channels && (
+        <p className="text-[var(--sc-text-muted)] text-xs px-3 py-3">Loading...</p>
+      )}
+
+      {!loading_channels && filteredChannels.length === 0 && (
+        <p className="text-[var(--sc-text-muted)] text-xs px-3 py-2">No channels found</p>
+      )}
+
+      <div className="flex-1 overflow-hidden">
+        <ScrollBar ref={scrollbarRef}>
+          {filteredChannels.map((channel) => (
+            <ChannelTag
+              key={channel.channel_id}
+              channel_name={channel.channel_name}
+              channel_id={channel.channel_id}
+            />
+          ))}
+        </ScrollBar>
       </div>
-  
+
+    </div>
   )
 }
 

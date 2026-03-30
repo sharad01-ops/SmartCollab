@@ -2,6 +2,32 @@ const os=require("os")
 require("dotenv").config()
 
 
+function getLocalIp() {
+    const interfaces = os.networkInterfaces();
+
+    for (const name of Object.keys(interfaces)) {
+        for (const net of interfaces[name]) {
+
+            if (
+                net.family === "IPv4" &&
+                !net.internal &&
+                (
+                    net.address.startsWith("192.168") ||
+                    net.address.startsWith("10.") ||
+                    net.address.startsWith("172.")
+                )
+            ) {
+                return net.address;
+            }
+        }
+    }
+
+    return "127.0.0.1"; // fallback
+}
+
+
+
+
 module.exports={
     routerOptions :
 		{
@@ -66,13 +92,13 @@ module.exports={
 				{
 					protocol         : 'udp',
 					ip               : process.env.MEDIASOUP_LISTEN_IP || '0.0.0.0',
-					announcedAddress : process.env.MEDIASOUP_ANNOUNCED_IP,
+					announcedAddress : getLocalIp(),
 					port             : 44444
 				},
 				{
 					protocol         : 'tcp',
 					ip               : process.env.MEDIASOUP_LISTEN_IP || '0.0.0.0',
-					announcedAddress : process.env.MEDIASOUP_ANNOUNCED_IP,
+					announcedAddress : getLocalIp(),
 					port             : 44444
 				}
 			]

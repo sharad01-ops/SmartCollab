@@ -5,7 +5,7 @@ const Rooms=new Map()
 function initialize_socketio_Server(allowed_origins, server){
     const io=require("socket.io")(server, {
         cors:{
-            origin: allowed_origins
+            origin: "*"
         }
     })
 
@@ -14,170 +14,308 @@ function initialize_socketio_Server(allowed_origins, server){
         socket.emit("get_peerid",socket.id)
 
         socket.on('disconnect', (reason) => {
-            console.log(chalk.red(`${socket.id} disconnected because: ${reason}`));
-            
+            console.log(chalk.red(`client ${socket.id} disconnected because: ${reason}`));
+        })
+
+        socket.on('disconnecting', () => {
+            const joined_rooms=Array.from(socket.rooms).filter(
+                                    (item) => item !== socket.id
+                                );
+            for(const roomid of joined_rooms){
+                const room=Rooms.get(roomid)
+                if(room){
+                    const {peers, producers, consumers}=room
+                    const peer=peers.get(socket.id)
+                    if(peer){
+                        peer.sendTransport.close()
+                        peer.recvTransport.close()
+                        for(const producerId of peer.producerIds){
+                            const producer=producers.get(producerId)
+                            if(producer){
+                                producer.close()
+                                producers.delete(producerId)
+                            }
+                        }
+                        for(const consumerId of peer.consumerIds){
+                            const consumer=consumers.get(consumerId)
+                            if(consumer){
+                                consumer.close()
+                                consumers.delete(consumerId)
+                            }
+                        }
+                        io.in(roomid).emit("closeConsumers",{producerIds: peer.producerIds})
+
+                        peers.delete(socket.id)
+                        if(peers.size==0){
+                            Rooms.delete(roomid)
+                            console.log(chalk.magenta(`deleted room ${roomid}`))
+                        }
+                    }
+                }
+            }
+
         });
+
         socket.on("custom-event", (props)=>{
             console.log(chalk.yellow(`recieved from client:`),props)
         })
 
         socket.on("join_room", async (props)=>{
             const {communityId, channelId}=props
-            console.log("room_join params: ", props)
-            const {router, worker, WebRTCServer, peers}=await getOrCreateRoom(communityId, channelId)
+            const {router, worker, WebRTCServer, peers}=await getOrCreateRoom(`${communityId}${channelId}`)
+            console.log(chalk.yellow(`client ${socket.id} joined room ${communityId}${channelId}`))
             socket.join(`${communityId}${channelId}`)
-            peers.set(socket.id, {socket: socket})
+            peers.set(socket.id, {socket: socket, producerIds:[], consumerIds:[], consumed_ProducerIds:new Map(), sendTransport:null, recvTransport:null} )
             // console.log(router.rtpCapabilities)
             socket.emit("getRtpCapabilities", router.rtpCapabilities)
         })
 
+
+
         socket.on("createWebRtcTransport", async (props)=>{
-            const {communityId, channelId}=props
-            const {router, worker, WebRTCServer, peers}=await getOrCreateRoom(communityId, channelId)
+            
+            const {communityId, channelId, rtpCapabilities}=props
+            const {router, WebRTCServer, peers, producers, consumers}=await getOrCreateRoom(`${communityId}${channelId}`)
             // console.log(router, worker, WebRTCServer)
-            const transport=await webrtc_funcs.createWebRtcTransport(router, WebRTCServer, socket.id)
-            socket.emit("createSendTransport", {
-                id             : transport.id,
-                iceParameters  : transport.iceParameters ,
-                iceCandidates  : transport.iceCandidates ,
-                dtlsParameters : transport.dtlsParameters,
-                sctpParameters : transport.sctpParameters
+            const sendTransport=await webrtc_funcs.createWebRtcTransport(router, WebRTCServer, socket.id)
+            const recvTransport=await webrtc_funcs.createWebRtcTransport(router, WebRTCServer, socket.id)
+            
+            const peer=peers.get(socket.id)
+            peer.sendTransport=sendTransport
+            peer.recvTransport=recvTransport
+
+            sendTransport.on("close", ()=>{
+                console.log(chalk.red(`sendTransport for ${socket.id} closed`))
             })
 
-            socket.on("transport-produce", async (props, callback)=>{
-                const {
-                    kind,
-                    rtpParameters,
-                    appData       
-                }=props
+            recvTransport.on("close", ()=>{
+                console.log(chalk.red(`recvTransport for ${socket.id} closed`))
+            })
 
+            socket.emit("createTransports", {
+                    sendTransportParams:{
+                        id             : sendTransport.id,
+                        iceParameters  : sendTransport.iceParameters ,
+                        iceCandidates  : sendTransport.iceCandidates ,
+                        dtlsParameters : sendTransport.dtlsParameters,
+                        sctpParameters : sendTransport.sctpParameters
+                    },
+                    recvTransportParams:{
+                        id             : recvTransport.id,
+                        iceParameters  : recvTransport.iceParameters ,
+                        iceCandidates  : recvTransport.iceCandidates ,
+                        dtlsParameters : recvTransport.dtlsParameters,
+                        sctpParameters : recvTransport.sctpParameters
+                    }
+            })
+
+
+            // transport.on("icestatechange", state => {
+            //     console.log("SERVER ICE:", state);
+            // });
+
+            // transport.on("dtlsstatechange", state => {
+            //     console.log("SERVER DTLS:", state);
+            // });
+
+            socket.on("connectSendTransport",async (props, callback)=>{
+                const {dtlsParameters}=props
+                await sendTransport.connect({dtlsParameters:dtlsParameters})
+                callback({success: true})
+                console.log(chalk.green(`Connected sendTransport for client: ${socket.id}`))
+            })
+
+            socket.on("connectRecvTransport",async (props, callback)=>{
+                const {dtlsParameters}=props
+                await recvTransport.connect({dtlsParameters:dtlsParameters})
+                callback({success: true})
+                console.log(chalk.green(`Connected recieveTransport for client: ${socket.id}`))
+            })
+
+
+            socket.on("createProducer", async (props, callback)=>{
+                const {
+                        kind,
+                        rtpParameters,
+                        appData       
+                    }=props
                 try{
-                    const producer=await transport.produce(
+                    const producer=await sendTransport.produce(
                         {
                             kind: kind,
                             rtpParameters: rtpParameters
                         }
                     )
+                    console.log(chalk.blue(`${socket.id}: ${kind} Producer Created with prod_id ${producer.id}`))
+                    producer.on("transportclose", ()=>{
+                        console.log(chalk.yellow(`${socket.id}: producer with prod_id ${producer.id} closed`))
+                    })
                     let peerInfo=peers.get(socket.id)
-                    if(!peerInfo.producerIds || Array.isArray(peerInfo.producerIds)){
-                        peerInfo.producerIds=[producer.id]
-                    }else{
-                        peerInfo.producerIds.push(producer.id)
-                    }
+                    peerInfo.producerIds.push(producer.id)
+                    producers.set(producer.id, producer)
                     peers.set(socket.id, peerInfo)
-                    
+                
                     callback({success: true, producerid:producer.id})
+                    
 
-                    socket.broadcast.to(`${communityId}${channelId}`).emit("createConsumer",{yup:"yup"})
-                    const ProducerIdsforRoom=getRoomProducerIds(communityId, channelId, socket.id)
-                    if(ProducerIdsforRoom.length>0){
-                        socket.emit("createConsumer",{yup:"yup"})
+                    // emit to all clients in the room `${communityId}${channelId}` excluding the sender
+                    socket.to(`${communityId}${channelId}`).emit("producerCreated",{producer_id: producer.id})
+                    if(peers.size>1){
+                        socket.emit("producerCreated",{own_producer_id: producer.id}) 
                     }
+                    // console.log("---------------",socket.id,"createProducer------------------")
+                    // console.log(socket.id,"Producers: ",peers.get(socket.id)?.producerIds)
+                    // console.log(socket.id,"Consumers: ",peers.get(socket.id)?.consumerIds)
+                    // console.log("-----------------------------------------------")
                 }catch(e){
                     console.log(e)
                 }
-
             })
 
-            transport.on("icestatechange", state => {
-                console.log("SERVER ICE:", state);
-            });
+            socket.on("closeScreenShareConsumers", async (props, callback)=>{
+                const {producerid}=props
+                io.in(`${communityId}${channelId}`).emit("closeConsumers",{producerIds: [producerid]})
 
-            transport.on("dtlsstatechange", state => {
-                console.log("SERVER DTLS:", state);
-            });
+                const {peers, producers, consumers}=await getOrCreateRoom(`${communityId}${channelId}`)
+                //peers.set(socket.id, 
+                //          {socket: socket, 
+                //          producerIds:[], 
+                //          consumerIds:[], 
+                //          consumed_ProducerIds=new Map()
+                //          sendTransport:null, 
+                //          recvTransport:null} )
+                for(const [socketId, peer] of peers){
+                    if(socketId==socket.id){
+                        if (peer.producerIds.includes(producerid)) {
+                            peer.producerIds.splice(peer.producerIds.indexOf(producerid), 1);
+                        }
+                        const producer=producers.get(producerid)
+                        if(producer){
+                            producer.close()
+                            producers.delete(producerid)
+                        }
 
-            socket.on("connectSendTransport",async (props, callback)=>{
-                await transport.connect({dtlsParameters:props.dtlsParameters})
-                callback({success: true})
-                console.log(chalk.magenta("connected sendTransport"))
-            })
+                    }else{
+                        const consumerId=peer.consumed_ProducerIds.get(producerid)
+                        if(consumerId){
+                            if (peer.consumerIds.includes(consumerId)) {
+                                peer.consumerIds.splice(peer.consumerIds.indexOf(consumerId), 1);
+                            }
 
-
-        })
-
-        socket.on("createWebRtcTransport-recv", async (props)=>{
-            const {communityId, channelId, rtpCapabilities}=props
-            const {router, worker, WebRTCServer}=await getOrCreateRoom(communityId, channelId)
-
-            // socket.on("getDeviceRtpCapabilities", (rtpCapabilities)=>{
-            
-            // })
-            
-            const recvTransport=await webrtc_funcs.createWebRtcTransport(router, WebRTCServer, socket.id)
-
-            recvTransport.on("icestatechange", state => {
-                console.log("SERVER RECV ICE:", state);
-            });
-
-            recvTransport.on("dtlsstatechange", state => {
-                console.log("SERVER RECV DTLS:", state);
-            });
-
-            socket.emit("createRecvTransport", {
-                id             : recvTransport.id,
-                iceParameters  : recvTransport.iceParameters ,
-                iceCandidates  : recvTransport.iceCandidates ,
-                dtlsParameters : recvTransport.dtlsParameters,
-                sctpParameters : recvTransport.sctpParameters
-            })
-
-            const producerIds=getRoomProducerIds(communityId, channelId, socket.id)
-            const consumers=[]
-            for(const producerid of producerIds){
-                if(router.canConsume({
-                    producerId:producerid,
-                    rtpCapabilities:rtpCapabilities
-                })){
-                    const consumer=await recvTransport.consume({
-                                        producerId:producerid,
-                                        rtpCapabilities:rtpCapabilities
-                                    });
-                    consumers.push({
-                        consumerid: consumer.id,
-                        producerid: producerid,
-                        kind: consumer.kind,
-                        rtpParameters: consumer.rtpParameters
-                    })
-                    console.log(chalk.magenta("Consumer Created"))
+                            peer.consumed_ProducerIds.delete(producerid)
+                            const consumer=consumers.get(consumerId)
+                            if(consumer){
+                                consumer.close()
+                                consumers.delete(consumerId)
+                            }
+                        }
+                    }
                 }
-            }
 
-            socket.emit("getConsumers", consumers)
-
-            socket.on("connectRecvTransport",async (props, callback)=>{
-                await recvTransport.connect({dtlsParameters:props.dtlsParameters})
-                callback({success: true})
-                console.log(chalk.magenta("connected RecvTransport"))
+                callback({success:true})
             })
 
+            socket.on("createConsumers", async (props, callback)=>{
+                const ProducerIdsforRoom=getAllRoomProducerIds_ExceptSelf(`${communityId}${channelId}`, socket.id)
+                // console.log(chalk.green(`for ${socket.id} producer_ids_being_consumed:`),producer_ids_being_consumed)
+                // console.log(chalk.green(`for ${socket.id} producer_ids_self:`),producer_ids_self)
+                let peerInfo=peers.get(socket.id)
+                const consumable_producerids=ProducerIdsforRoom.filter((producerid)=>{
+                                    if(![...peerInfo.consumed_ProducerIds.keys()].includes(producerid)){
+                                        return true
+                                    }
+                                } )
+                
+                // console.log(chalk.green(`for ${socket.id} consumable_producerids:`),consumable_producerids)
+                const consumers_props=[]
+                for(const producerid of consumable_producerids){
+
+                    if(router.canConsume({
+                        producerId:producerid,
+                        rtpCapabilities:rtpCapabilities
+                    })){
+                        const consumer=await recvTransport.consume({
+                                            producerId:producerid,
+                                            rtpCapabilities:rtpCapabilities
+                                        });
+                        consumer.on("transportclose", ()=>{
+                            // console.log(peers.get(socket.id)?.producerIds)
+                            console.log(chalk.yellow(`${socket.id}: consumer for prod_id ${producerid} closed`))
+                        })
+                        let peerInfo=peers.get(socket.id)
+                        peerInfo.consumerIds.push(consumer.id)
+                        peerInfo.consumed_ProducerIds.set(producerid, consumer.id)
+                        consumers.set(consumer.id, consumer)
+                        peers.set(socket.id, peerInfo)
+
+                        consumers_props.push({
+                            consumerid: consumer.id,
+                            producerid: producerid,
+                            kind: consumer.kind,
+                            rtpParameters: consumer.rtpParameters
+                        })
+
+                        console.log(chalk.cyan(`${socket.id}: ${consumer.kind} Consumer Created for prod_id ${producerid}`))
+                    }
+                }
+                // console.log("----------------",socket.id,"createConsumers----------------")
+                // console.log(socket.id,"Producers: ",peers.get(socket.id)?.producerIds)
+                // console.log(socket.id,"Consumers: ",peers.get(socket.id)?.consumerIds)
+                // console.log(socket.id,"Consumed Producerids: ",producer_ids_being_consumed)
+                // console.log("-----------------------------------------------")
+                callback({consumers_props})
+
+            })
+
+
+
         })
+
 
         
     });
 }
 
 
-async function getOrCreateRoom(communityid, channelid){
-    let room=Rooms.get(`${communityid}${channelid}`)
+async function getOrCreateRoom(room_id){
+    let room=Rooms.get(room_id)
     if(room) return room
 
     const {router, worker, WebRTCServer}=await webrtc_funcs.create_router()
     const peers=new Map()
-    Rooms.set(`${communityid}${channelid}`, {router, worker, WebRTCServer, peers})
-    return {router, worker, WebRTCServer, peers}
+    //peers.set(socket.id, 
+    //          {socket: socket, 
+    //          producerIds:[], 
+    //          consumerIds:[], 
+    //          consumed_ProducerIds=new Map()
+    //          sendTransport:null, 
+    //          recvTransport:null} )
+    const producers=new Map()
+    const consumers=new Map()
+    Rooms.set(room_id, {router, worker, WebRTCServer, peers, producers, consumers})
+    return {router, worker, WebRTCServer, peers, producers, consumers}
 
 }
 
-function getRoomProducerIds(communityid, channelid, ownPeerId){
-    let room=Rooms.get(`${communityid}${channelid}`)
+
+function getRoomProducerIds(room_id){
+    let room=Rooms.get(room_id)
     if(!room) throw new Error("Trying to consume in a room that doesnt exist")
     const ProducerIds=[]
     for(const [peerId, peer] of room.peers){
-        if(peerId!=ownPeerId){
-            for(const producerId of peer.producerIds){
-                ProducerIds.push(producerId)
-            }
+        ProducerIds.push(...peer.producerIds)
+    }
+
+    return ProducerIds
+}
+
+function getAllRoomProducerIds_ExceptSelf(room_id, socketid){
+    let room=Rooms.get(room_id)
+    if(!room) throw new Error("Trying to consume in a room that doesnt exist")
+    const ProducerIds=[]
+    for(const [peerId, peer] of room.peers){
+        if(peerId!=socketid){
+            ProducerIds.push(...peer.producerIds)
         }
     }
 

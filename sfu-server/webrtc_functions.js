@@ -65,9 +65,6 @@ async function createWebRtcTransport( router, WebRTCServer, peerId) {
     return transport
 }
 
-async function createProducer(transport, ) {
-    
-}
 
 
 module.exports={createWorkers, create_router, createWebRtcTransport}

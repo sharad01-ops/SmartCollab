@@ -1,13 +1,15 @@
 import { io } from "socket.io-client";
 import chalk from "chalk";
-const SFU_URL=import.meta.env.VITE_SFU_SERVER_URL_BASE
+const SFU_URL=import.meta.env.VITE_SFU_SERVER_PROXY_URL
 
 class SocketIOClient{
     socket=null
     peerid=null
 
+    on_recieve_callbacks=[]
+
     connect(){
-        this.socket=io(SFU_URL)
+        this.socket=io()
 
         this.socket.on("connect",()=>{
             console.log(chalk.green("connected to sfu"))
@@ -24,9 +26,18 @@ class SocketIOClient{
         });
     }
 
+    register_on_recieve_callbacks(callback){
+        this.on_recieve_callbacks.push(callback)
+    }
+
     on(event_name, callback){
         if(!event_name || !callback || !this.socket ) return
         console.log(chalk.yellow(`listening to ${event_name}:`),callback?.name)
+
+        for(const cb of this.on_recieve_callbacks){
+            this.socket.on(event_name, ()=>{cb(event_name,callback.name)})
+        }
+        
         this.socket.on(event_name, callback);
     }
 
@@ -48,6 +59,7 @@ class SocketIOClient{
         this.socket.disconnect()
         this.socket=null
         this.peerid=null
+        this.on_recieve_callbacks=[]
     }
 }
 

@@ -22,6 +22,7 @@ const router = createBrowserRouter([
     element: 
       <Home />
     ,
+    errorElement:<ErrorFallback/>
   },
   {
     path: "/login",

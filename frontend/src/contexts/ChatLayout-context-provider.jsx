@@ -1,26 +1,40 @@
-import { createContext, useState } from "react"
+import {useState, createContext, useEffect} from 'react'
+import { useParams } from 'react-router-dom'
 
-export const ChatLayout_Context = createContext(null)
+export const ChatLayout_Context=createContext(null)
 
-const ChatLayout_Context_Provider = ({ children }) => {
+export const ChatLayout_Context_Provider = ({children}) => {
+    const [CurrentCommunity, setCurrentCommunity]=useState(null)
+    const [CurrentChannel, setCurrentChannel]=useState(null)
+    const [CommunityChannelMap, setCommunityChannelMap]=useState({})
+    const [CommunityChannels, setCommunityChannels]=useState([])
+    const [user_id, setUserid]=useState(null)
 
-  const [CurrentCommunity, setCurrentCommunity] = useState(null)
-  const [CurrentChannel, setCurrentChannel] = useState(null)
-  const [CommunityChannelMap, setCommunityChannelMap] = useState({})
-  const [user_id, setUser_id] = useState(null)
-  const [channelFilter, setChannelFilter] = useState('')
+    const {communityId, channelId}=useParams()
+    
+    useEffect(()=>{ 
 
-  return (
-    <ChatLayout_Context.Provider value={{
-      CurrentCommunity, setCurrentCommunity,
-      CurrentChannel, setCurrentChannel,
-      CommunityChannelMap, setCommunityChannelMap,
-      user_id, setUser_id,
-      channelFilter, setChannelFilter,
-    }}>
-      {children}
-    </ChatLayout_Context.Provider>
-  )
+    if(!channelId || !communityId) return
+    setCommunityChannelMap( (prev)=>{
+        return {...prev, [communityId]:channelId }
+    } )
+
+  }, [communityId, channelId])
+
+    return (
+        <ChatLayout_Context.Provider value={{
+                                        CurrentCommunity, 
+                                        setCurrentCommunity,
+                                        CurrentChannel, 
+                                        setCurrentChannel,
+                                        CommunityChannelMap,
+                                        setCommunityChannelMap,
+                                        user_id,
+                                        setUserid,
+                                        setCommunityChannels,
+                                        CommunityChannels
+                                        }}>
+            {children}
+        </ChatLayout_Context.Provider>
+    )
 }
-
-export { ChatLayout_Context_Provider }

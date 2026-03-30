@@ -1,49 +1,62 @@
-import { useContext, useEffect, useState } from "react"
-import { Outlet, useParams } from "react-router-dom"
-import { ChatLayout_Context } from "../../contexts/ChatLayout-context-provider"
-import GroupBar from "./ChatLayout Components/GroupBar"
-import OptionsBar from "./ChatLayout Components/OptionsBar"
-import SearchBar from "./ChatLayout Components/SearchBar"
-import ChannelsPanel from "./ChatLayout Components/ChannelsPanel"
-import { EmptyChatSection } from "./EmptyChatSection"
-import { useAuth, useUserInfo } from "../../hooks/user_hooks"
-import { useAsyncError } from "../../hooks/ErrorHooks"
+import { useContext, useEffect, useState, Suspense } from "react";
+import { Outlet, useParams, useNavigate } from "react-router-dom"
+import {EmptyChatSection} from "./EmptyChatSection";
+
+import GroupBar from "./ChatLayout Components/GroupBar";
+import OptionsBar from "./ChatLayout Components/OptionsBar";
+import SearchBar from "./ChatLayout Components/SearchBar";
+import ChannelsPanel from "./ChatLayout Components/ChannelsPanel";
+
+import { useAsyncError } from "../../hooks/ErrorHooks";
+
+import { useUserInfo } from "../../hooks/user_hooks";
+import { ChatLayout_Context } from "../../contexts/ChatLayout-context-provider";
+
 
 const ChatLayout = () => {
-  const { channelId } = useParams()
-  const { setUser_id } = useContext(ChatLayout_Context)
-  const throwError = useAsyncError()
+    const {getUserProfile, getCommunities}=useUserInfo()
 
-  const { AutoLogin_user } = useAuth()
-  const { getUserProfile, getCommunities } = useUserInfo()
+    const {user_id, setUserid}=useContext(ChatLayout_Context)
+    const throwError=useAsyncError()
 
-  const [UserProfile, setUserProfile] = useState(null)
-  const [UserCommunities, setUserCommunities] = useState(null)
-  const [loading, setLoading] = useState(true)
+    const {communityId, channelId}=useParams();
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true)
-        const [profile, communities] = await Promise.all([
-          getUserProfile(),
-          getCommunities(),
-        ])
-        setUserProfile(profile?.UserInfo ?? profile)
-        setUserCommunities(communities?.UserCommunities ?? communities)
-        if (profile?.UserInfo?.user_id ?? profile?.user_id) {
-          setUser_id(profile?.UserInfo?.user_id ?? profile?.user_id)
-        }
-      } catch (e) {
-        throwError(e)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [])
+    const [UserProfile, setUserProfile]=useState(null)
+    const [UserCommunities, setUserCommunities]=useState(null)
 
-  if (loading || !UserProfile || !UserCommunities) {
+ 
+    useEffect(()=>{
+
+        getUserProfile().then((user_profile)=>{
+            const userInfo=user_profile.UserInfo
+            console.log("user profile: ",userInfo.username)
+            setUserProfile(user_profile.UserInfo)
+            if(user_profile.UserInfo){
+                setUserid(user_profile.UserInfo.user_id)
+            }
+        }).catch((e)=>{
+            console.log("Error getting user profile: ")
+            throwError(e)
+        })
+
+
+        getCommunities().then(
+            (communities)=>{
+                console.log("fetched communities: ",communities.UserCommunities)
+                setUserCommunities(communities.UserCommunities)
+            }
+        ).catch((e)=>{
+            console.log("Error getting communities: ")
+            console.error(e)
+        })
+
+
+        if(!communityId || !channelId) return;
+
+
+    }, [])
+
+  if (!UserProfile || !UserCommunities ) {
     return (
       <div className="h-screen w-full bg-[var(--sc-bg-primary)] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">

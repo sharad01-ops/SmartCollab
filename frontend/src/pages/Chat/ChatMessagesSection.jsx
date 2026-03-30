@@ -1,71 +1,103 @@
-import { useContext, useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { ChatLayout_Context } from '../../contexts/ChatLayout-context-provider'
-import { WebsocketsContext } from '../../contexts/WebSockets-context-provider'
-import { useChannels } from '../../hooks/channel_hooks'
-import { useAsyncError } from '../../hooks/ErrorHooks'
-import ChatHeader from './MessageSection Components/ChatHeader'
-import MessageBar from './MessageSection Components/MessageBar'
-import TextBox from './MessageSection Components/TextBox'
-import ScrollBar from '../common components/ScrollBar'
+import ChatHeader from "./MessageSection Components/ChatHeader"
+import TextBox from "./MessageSection Components/TextBox"
+import MessageBar from "./MessageSection Components/MessageBar"
+import { useParams } from "react-router-dom"
+import { useContext, useEffect, useRef, useState } from "react"
+import { ChatLayout_Context } from "../../contexts/ChatLayout-context-provider"
+import { get_channel_messages } from "../../services/channel_services"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import ScrollBar from "../common components/ScrollBar"
+import { WebsocketsContext } from "../../contexts/WebSockets-context-provider"
+import { wsClient } from "../../api/websocket"
 
 const ChatMessagesSection = () => {
-  const { communityId, channelId } = useParams()
-  const { user_id } = useContext(ChatLayout_Context)
-  const wsClient = useContext(WebsocketsContext)  // value IS the wsClient directly
-  const scrollbarRef = useRef(null)
-  const throwError = useAsyncError()
+  const {communityId, channelId}=useParams()
 
-  const { getMessages, loading_messages } = useChannels()
-  const [messages, setMessages] = useState([])
+  const scrollbarRef=useRef(null)
 
-  useEffect(() => {
-    if (!communityId || !channelId) return
-    getMessages(communityId, channelId)
-      .then((data) => {
-        setMessages(data?.Messages ?? [])
-      })
-      .catch((e) => throwError(e))
-  }, [communityId, channelId])
+  const {setCommunityChannelMap, user_id}=useContext(ChatLayout_Context)
 
-  // Scroll to bottom when messages load or update
-  useEffect(() => {
-    scrollbarRef.current?.scrollToBottom()
-  }, [messages])
+  const wesocket=useContext(WebsocketsContext)
+  const queryClient=useQueryClient()
+  const [scroll, doScroll]=useState(false)
 
-  // WebSocket subscription
-  useEffect(() => {
-    if (!wsClient || !channelId) return
-    const unsubscribe = wsClient.subscribe?.((message) => {
-      update_message_list(message)
-    })
-    return () => {
-      if (typeof unsubscribe === 'function') unsubscribe()
+  const {data, isLoading, isError, error}=useQuery({
+    queryKey: ["messages", communityId, channelId],
+    queryFn: ()=>{return get_channel_messages(communityId, channelId)},
+    enabled: !!channelId && !!communityId,
+    staleTime: 1000*60*1
+  })
+
+
+  const update_message_list=({type, sender_id, community_id, channel_id, message})=>{
+    // console.log("on recieve:",type, sender_id, typeof(community_id), typeof(channel_id), message)
+    if(!type || !sender_id || !community_id || !channel_id || !message) return
+    
+    const state = queryClient.getQueryState(["messages", String(community_id), String(channel_id)])
+
+    if(!state) return
+
+    queryClient.setQueryData(
+      ["messages", String(community_id), String(channel_id)],
+      (old) => {
+        const prev = old?.Messages ?? []
+        console.log(user_id)
+        return {
+          ...old,
+          Messages: [...prev, {type, sender_id:sender_id==user_id?"user":sender_id, community_id, channel_id, message} ],
+        }
+      }
+    )
+
+  }
+
+
+
+  useEffect(()=>{
+    if(!communityId) return
+    if(isError){
+      setCommunityChannelMap( (prev)=>{
+          return {...prev, [communityId]:null }
+      } )
     }
-  }, [wsClient, channelId])
 
-  const update_message_list = (newMessage) => {
-    setMessages(prev => [...prev, newMessage])
-    scrollbarRef.current?.scrollToBottom()
+  },[isError, error])
+
+
+  useEffect(()=>{
+
+    if(wsClient && communityId && channelId){
+      console.log("subscribing")
+      wsClient.subscribe("session_messages", update_message_list)
+    }
+    
+    
+  },[communityId, channelId])
+
+  useEffect(()=>{
+    if(scrollbarRef.current){ 
+      scrollbarRef.current.scrollToBottom()
+    }
+  },[data])
+
+
+
+  const sendMessage=(value)=>{
+    if(!value || !wsClient) return
+    wsClient.send(
+      { 'type': 'message', 
+        'communityId': communityId, 
+        'channelId': channelId, 
+        "message":value})
+    console.log("message Sent: ", value)
   }
 
-  const sendMessage = (text) => {
-    if (!text.trim()) return
-    wsClient?.send?.({
-      type: 'message',
-      message: text,
-      channel_id: channelId,
-      community_id: communityId,
-    })
-    // Optimistic update
-    update_message_list({
-      sender_id: user_id,
-      message: text,
-      sent_at: null,
-    })
+
+  if(isError){
+    throw error
   }
 
-  if (loading_messages) {
+  if (isLoading) {
     return (
       <div className="w-full h-full flex flex-col">
         <ChatHeader />
@@ -85,15 +117,19 @@ const ChatMessagesSection = () => {
         <ScrollBar ref={scrollbarRef}>
           <div className="pt-4 pb-2">
             <div className="space-y-0.5">
-              {messages.map((msg, i) => (
-                <TextBox
-                  key={msg.message_id ?? i}
-                  fromUser={msg.sender_id == user_id}
-                  message={msg.message}
-                  sender_id={msg.sender_id}
-                  sent_at={msg.sent_at}
-                />
-              ))}
+              {
+              data && Array.isArray(data.Messages) &&
+
+              data.Messages.map((msg, i) => (
+                  <TextBox
+                    key={msg.message_id ?? i}
+                    fromUser={msg.sender_id == "user"}
+                    message={msg.message}
+                    sender_id={msg.sender_id}
+                    sent_at={msg.sent_at}
+                  />
+                ))
+              }
             </div>
           </div>
         </ScrollBar>

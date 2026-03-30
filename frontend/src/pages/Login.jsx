@@ -6,28 +6,43 @@ import { get_all_user_credentials } from "../services/dev_services"
 
 const DEV_KEY = import.meta.env.VITE_DEV_MODE_KEY
 
-const Show_Demo_Creds = ({ users_list, onSelect }) => {
-  if (!users_list || users_list.length === 0) return null
+const Show_Demo_Creds = ({ users_creds, username_input_ref, email_input_ref, password_input_ref }) => {
+  if(!DEV_KEY || !users_creds) return null;
+
+
+  const fill_form=(user_name, user_email, user_password)=>{
+    if(!username_input_ref.current
+      || !email_input_ref.current
+      || !password_input_ref.current
+    ) return
+
+    username_input_ref.current.value=user_name
+    email_input_ref.current.value=user_email
+    password_input_ref.current.value=user_password
+  }
 
   return (
     <div className="fixed top-4 left-4 z-50 bg-[var(--sc-bg-elevated)] border border-[var(--sc-border)] rounded-xl p-3 shadow-sm">
       <p className="text-[10px] font-medium text-[var(--sc-text-muted)] uppercase tracking-wider mb-2">
-        Demo Accounts
+        ALL Accounts
       </p>
       <div className="grid grid-cols-2 gap-1 max-h-[200px] overflow-y-auto">
-        {users_list.map((user, i) => (
+        {users_creds.map((credentials, i) => (
           <div
             key={i}
-            onClick={() => onSelect && onSelect(user)}
             className="bg-[var(--sc-bg-secondary)] hover:bg-[var(--sc-accent-subtle)] hover:text-[var(--sc-accent)] text-[var(--sc-text-secondary)] text-xs px-3 py-1.5 rounded-md cursor-pointer transition-colors select-none"
+            onClick={()=>{
+              fill_form(credentials.user_name, credentials.user_email, credentials.user_password);
+            }}
           >
-            {user.username}
+            {credentials.user_name}
           </div>
         ))}
       </div>
     </div>
   )
 }
+
 
 const Login = () => {
   const navigate = useNavigate()
@@ -44,39 +59,85 @@ const Login = () => {
       if (authenticated) navigate('/chats')
     }).catch(() => {})
 
-    if (DEV_KEY === 'dev') {
-      get_all_user_credentials().then(data => {
-        setUsers_list(data?.user_credentials ?? [])
-      }).catch(() => {})
+    if (DEV_KEY) {
+      get_all_user_credentials(DEV_KEY)
+      .then((res)=>{
+        const user_cred_list=res?.user_credentials 
+        if(Array.isArray(user_cred_list)){
+          setUsers_list(user_cred_list)
+        }
+
+      }).catch((err)=>{
+        console.error("Error in dev get:",err)
+      })
     }
   }, [])
 
-  useEffect(() => {
-    if (isAuthenticated) navigate('/chats')
-  }, [isAuthenticated])
+  const handleFormSubmision= (formData)=>{
+    const username=formData.get("username")
+    const email=formData.get("email")
+    const password=formData.get("password")
+    console.log(`
+        Username: ${username}
+        Email: ${email}
+        Password: ${password}
+      `)  
 
-  // Note: typo preserved from original — handleFormSubmision
-  const handleFormSubmision = async (formData) => {
-    const username = formData.get('username')
-    const email = formData.get('email')
-    const password = formData.get('password')
-    const result = await handleLogin({ username, email, password })
-    if (result) setIsAuthenticated(true)
+      handleLogin({
+        username: username, 
+        email: email, 
+        password: password
+      }).then((login_result)=>{
+
+        console.log( `Login Result:`,login_result )
+        if(login_result.AccessToken){
+          setIsAuthenticated(true)
+        }
+
+      }).catch((e)=>{
+
+        setIsAuthenticated(false) 
+        console.error(e)
+
+      })
+
   }
 
-  const handleDemoSelect = (user) => {
-    if (usernameRef.current) usernameRef.current.value = user.username ?? ''
-    if (emailRef.current) emailRef.current.value = user.email ?? ''
-    if (passwordRef.current) passwordRef.current.value = user.password ?? ''
-  }
+
+
+  useEffect( ()=>{
+
+    //redirect user if refresh token exists
+    AutoLogin_user().then(
+      ()=>{
+        navigate("/chats")
+      }
+    ).catch((e)=>{
+    })
+
+    if(isAuthenticated){
+      console.log("User Authenticate, navigating to chats")
+      navigate("/chats")
+    }else{
+      console.log("user not authenticated")
+    }
+
+  },[isAuthenticated] )
+
+
 
   return (
     <div className="h-screen w-full bg-[var(--sc-bg-primary)] flex items-center justify-center font-[Inter]">
 
       {/* Demo credentials panel */}
-      {DEV_KEY === 'dev' && (
-        <Show_Demo_Creds users_list={users_list} onSelect={handleDemoSelect} />
-      )}
+      {DEV_KEY && 
+        <Show_Demo_Creds 
+          users_creds={users_list}
+          username_input_ref={usernameRef}
+          email_input_ref={emailRef}
+          password_input_ref={passwordRef}
+        />
+      }
 
       {/* Login card */}
       <div className="bg-[var(--sc-bg-elevated)] border border-[var(--sc-border)] rounded-xl p-8 w-full max-w-[380px] shadow-sm">

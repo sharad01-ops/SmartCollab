@@ -1,9 +1,10 @@
 import { useNavigate, useParams } from "react-router-dom"
 import { ArrowLeft, Video, VideoOff, Mic, MicOff, ScreenShare, ScreenShareOff, Camera, CameraOff } from "lucide-react"
 import { socketio_client } from "../../api/socketio_client"
-import { useEffect, useRef, useCallback, useState } from "react"
+import { useEffect, useRef, useCallback, useState, useContext } from "react"
 import { webrtc_client } from "../../api/webrtc_client"
 import chalk from "chalk"
+import { ChatLayout_Context } from "../../contexts/ChatLayout-context-provider"
 
 const Header=()=>{
     const navigate=useNavigate()
@@ -36,8 +37,8 @@ const Footer=()=>{
 
 const LocalVideoPlayer=({streamName, stream, setScreenShareToggle, ScreenShareToggle, callback})=>{
 
-    const [MicToggle, setMicToggle]=useState(true)
-    const [CameraToggle, setCameraToggle]=useState(true)
+    const [MicMuted, setMicMuted]=useState(false)
+    const [CamOff, setCamOff]=useState(false)
 
     console.log(chalk.magenta(`${streamName}`))
     callback()
@@ -45,6 +46,20 @@ const LocalVideoPlayer=({streamName, stream, setScreenShareToggle, ScreenShareTo
         return
     }
 
+
+    useEffect(()=>{
+        const muteMic=async ()=>{
+            await webrtc_client.ToggleAudio(MicMuted)
+        }
+        muteMic()
+    },[MicMuted])
+
+    useEffect(()=>{
+        const camOff=async ()=>{
+            await webrtc_client.ToggleVideo(CamOff)
+        }
+        camOff()
+    },[CamOff])
 
     const videoRef=useCallback((node)=>{
         if(node){
@@ -58,27 +73,25 @@ const LocalVideoPlayer=({streamName, stream, setScreenShareToggle, ScreenShareTo
             {
                 streamName==="videoCall" && (
                 <div className="flex flex-row">
-                    <div onClick={()=>{
-                            webrtc_client.ToggleAudio(!MicToggle)
-                            setMicToggle(!MicToggle)
+                    <div onClick={async ()=>{
+                            setMicMuted(!MicMuted)
                             }}>
-                        {MicToggle? 
+                        {MicMuted? 
                             (
-                                <Mic/>
-                            ):(
                                 <MicOff/>
+                            ):(
+                                <Mic/>
                             )
                         }
                     </div>
-                    <div onClick={()=>{
-                            webrtc_client.ToggleVideo(!CameraToggle)
-                            setCameraToggle(!CameraToggle)
+                    <div onClick={async ()=>{
+                            setCamOff(!CamOff)
                             }}>
-                        {CameraToggle? 
+                        {CamOff? 
                             (
-                                <Camera/>
-                            ):(
                                 <CameraOff/>
+                            ):(
+                                <Camera/>
                             )
                         }
                     </div>
@@ -148,6 +161,8 @@ const RemoteAudioPlayer=({stream, callback})=>{
 const VideoPanel=()=>{
     const url_params=useParams()
 
+    const {user_id, user_name}=useContext(ChatLayout_Context)
+
     const [LocalStreams, setLocalStreams]=useState(new Map())
     const [RemoteVideoStreams, setRemoteVideoStreams]=useState([])
     const [RemoteAudioStreams, setRemoteAudioStreams]=useState([])
@@ -163,6 +178,8 @@ const VideoPanel=()=>{
         webrtc_client.connect(
             url_params.communityId, 
             url_params.channelId, 
+            user_id, 
+            user_name,
             setLocalStreams, 
             setRemoteVideoStreams, 
             setRemoteAudioStreams,

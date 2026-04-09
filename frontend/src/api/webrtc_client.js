@@ -46,11 +46,15 @@ class WebRTCAPI{
     //community, this video call is being held in.
     community_id=null
     channel_id=null
+    userid=null
+    username=null
 
 
-    connect=(commid, channelid, setLocalStreams, setVideoStreams, setAudioStreams, setScreenShareToggle)=>{
+    connect=(commid, channelid, userid, username, setLocalStreams, setVideoStreams, setAudioStreams, setScreenShareToggle)=>{
         this.community_id=commid
         this.channel_id=channelid
+        this.userid=userid
+        this.username=username
         this.setLocalStreams=setLocalStreams
         this.setVideoStreams=setVideoStreams
         this.setAudioStreams=setAudioStreams
@@ -389,12 +393,12 @@ class WebRTCAPI{
                 {
                     videoGoogleStartBitrate : 1000
                 },
-            appData: {type:"CamFeed"}
+            appData: {type:"cam_feed",userId:this.userid, userName:this.username}
         })
 
         const audio_producer=await this.sendTransport.produce({
             track       : audioTrack,
-            appData: {type:"MicFeed"}
+            appData: {type:"mic_feed",userId:this.userid, userName:this.username}
         })
 
         this.Local_Tracks.video=videoTrack
@@ -429,7 +433,7 @@ class WebRTCAPI{
                 {
                     videoGoogleStartBitrate : 1000
                 },
-            appData: {type: "ScreenCaptureFeed"}
+            appData: {type: "ScreenCaptureFeed", userId:this.userid, userName:this.username}
         })
         
         videoTrack.onended=()=>{
@@ -442,12 +446,61 @@ class WebRTCAPI{
 
 
 
-    ToggleVideo=(ismuted)=>{
-        this.Local_Tracks.video.enabled=ismuted
+    ToggleVideo=async (isOff)=>{
+        if(this.Local_Tracks.video?.enabled){
+            this.Local_Tracks.video.enabled=isOff
+        }
+        const videoProducer=this.producers.get("cam_feed")
+        if(isOff && videoProducer){
+            await videoProducer.pause()
+
+            socketio_client.emit("ToggleVideoProducer", {
+                producerId:this.own_producerids.get("cam_feed"),
+                isOn:false
+            })
+
+            console.log(chalk.green("Camera Off"))
+
+        }else if(videoProducer){
+            await videoProducer.resume()
+
+            socketio_client.emit("ToggleVideoProducer", {
+                producerId:this.own_producerids.get("cam_feed"),
+                isOn:true
+            })
+
+            console.log(chalk.green("Camera On"))
+
+        }
     }
 
-    ToggleAudio=(ismuted)=>{
-        this.Local_Tracks.audio.enabled=ismuted
+    ToggleAudio=async (ismuted)=>{
+        if(this.Local_Tracks.audio?.enabled){
+            this.Local_Tracks.audio.enabled=ismuted
+        }
+        
+        const audioProducer=this.producers.get("mic_feed")
+        if(ismuted && audioProducer){
+            await audioProducer.pause()
+
+            socketio_client.emit("ToggleAudioProducer", {
+                producerId:this.own_producerids.get("mic_feed"),
+                isOn:false
+            })
+
+            console.log(chalk.green("Mic Paused"))
+
+        }else if(audioProducer){
+            await audioProducer.resume()
+
+            socketio_client.emit("ToggleAudioProducer", {
+                producerId:this.own_producerids.get("mic_feed"),
+                isOn:true
+            })
+
+            console.log(chalk.green("Mic Resumed"))
+
+        }
     }
 
     async ToggleScreenShare(isStarted){

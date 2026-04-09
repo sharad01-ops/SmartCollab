@@ -4,6 +4,12 @@ __pycache__
 \.env
 secrets
 
+#tranbscriber
+transcriber/whisper/models/*
+!transcriber/whisper/models/.gitkeep
+
+transcriber/whisper/whisper.exe
+
 #keys and certificates
 cert
 
@@ -20,6 +26,7 @@ node_modules
 dist
 dist-ssr
 *.local
+
 
 # Editor directories and files
 .vscode/*

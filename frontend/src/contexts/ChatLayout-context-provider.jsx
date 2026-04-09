@@ -9,6 +9,7 @@ export const ChatLayout_Context_Provider = ({children}) => {
     const [CommunityChannelMap, setCommunityChannelMap]=useState({})
     const [CommunityChannels, setCommunityChannels]=useState([])
     const [user_id, setUserid]=useState(null)
+    const [user_name, setUserName]=useState(null)
 
     const {communityId, channelId}=useParams()
     
@@ -23,16 +24,12 @@ export const ChatLayout_Context_Provider = ({children}) => {
 
     return (
         <ChatLayout_Context.Provider value={{
-                                        CurrentCommunity, 
-                                        setCurrentCommunity,
-                                        CurrentChannel, 
-                                        setCurrentChannel,
-                                        CommunityChannelMap,
-                                        setCommunityChannelMap,
-                                        user_id,
-                                        setUserid,
-                                        setCommunityChannels,
-                                        CommunityChannels
+                                        CurrentCommunity, setCurrentCommunity,
+                                        CurrentChannel, setCurrentChannel,
+                                        CommunityChannelMap, setCommunityChannelMap,
+                                        user_id, setUserid,
+                                        user_name, setUserName,
+                                        setCommunityChannels, CommunityChannels
                                         }}>
             {children}
         </ChatLayout_Context.Provider>

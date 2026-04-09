@@ -1,6 +1,5 @@
 const express = require('express');
 const http = require('http')
-// const cors=require('cors')
 const {SFUConnectionHandler}=require('./SFUConnectionHandler')
 require("dotenv").config()
 const dgram=require('dgram')
@@ -25,9 +24,9 @@ SFUConnectionHandler.connect({
                                 ConvertChunksToWav
                               })
 
-const socketio_client=SFUConnectionHandler.socket
+
 const Pipelines=new Map()
-const Rooms=SFUConnectionHandler.Rooms
+
 const liveAudioService = new LiveAudioService({
   bufferDuration: 8000, // 8 seconds
   maxConcurrent: 2,
@@ -37,12 +36,10 @@ const liveAudioService = new LiveAudioService({
 socket.on('message', (msg)=>{
   const ssrc=msg.readUint32BE(8);
   const sequenceNumber = msg.readUInt16BE(2);
-  const timestamp = msg.readUInt32BE(4);
   
   const PacketInfo=SFUConnectionHandler.PacketInfo.get(ssrc)
   if(!PacketInfo) return
 
-  const {roomId, UserId, UserName}=PacketInfo
   let pipeline=Pipelines.get(ssrc)
   if(!pipeline){
     pipeline=new UserPipeline()
@@ -93,7 +90,7 @@ function HandleRoomClose(roomId){
 
 
 
-
+//Contains Code necesary for Pipeline Test only
 //====================================================================
 const AllChunks_Roomwise=new Map()
 

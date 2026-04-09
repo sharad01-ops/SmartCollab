@@ -44,3 +44,14 @@ def user_communities(token: str=Depends(token_verification), db:Session=Depends(
     return {"UserCommunities":user_comms}
 
 
+@router.get("/logout")
+def logout_user(response: Response, token: str=Depends(token_verification)):
+    uid=get_uid(access_token=token)
+    if uid:
+        response.delete_cookie(
+            key="refresh_token"
+        )
+    else:
+        return {"Logout":"Failed"}
+    
+    return {"Logout":"Success"}

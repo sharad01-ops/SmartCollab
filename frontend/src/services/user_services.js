@@ -85,3 +85,17 @@ export async function get_communities(){
         }
     )
 }
+
+
+export async function LogoutUser(){
+    return await FetchRequest(
+        "/users/logout",
+        {
+            method: "GET",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        }
+    )
+}

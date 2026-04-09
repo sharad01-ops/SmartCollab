@@ -1,6 +1,9 @@
 const chalk=require("chalk")
 const webrtc_funcs=require("./webrtc_functions")
+const TranscriberConnectionHandler=require("./transcriberConnectionHandler")
+
 const Rooms=new Map()
+
 
 function initialize_socketio_Server(allowed_origins, server){
     const io=require("socket.io")(server, {
@@ -32,6 +35,7 @@ function initialize_socketio_Server(allowed_origins, server){
                         for(const producerId of peer.producerIds){
                             const producer=producers.get(producerId)
                             if(producer){
+                                // console.log(chalk.yellow(`${socket.id}: producer with prod_id ${producerId} closed`))
                                 producer.close()
                                 producers.delete(producerId)
                             }
@@ -70,6 +74,12 @@ function initialize_socketio_Server(allowed_origins, server){
             socket.emit("getRtpCapabilities", router.rtpCapabilities)
         })
 
+        socket.on("connect-Transcriber", async (props, callback)=>{
+            console.log(chalk.green(`Transcriber client with id ${socket.id} connected`))
+
+            TranscriberConnectionHandler.connect(socket)
+            callback("connected Transport")
+        })
 
 
         socket.on("createWebRtcTransport", async (props)=>{
@@ -146,6 +156,15 @@ function initialize_socketio_Server(allowed_origins, server){
                             rtpParameters: rtpParameters
                         }
                     )
+                    if(kind=="audio"){
+                        TranscriberConnectionHandler.createConsumer(
+                            router, 
+                            producer.id,
+                            `${communityId}${channelId}`,
+                            appData.userId, 
+                            appData.userName
+                        )
+                    }
                     console.log(chalk.blue(`${socket.id}: ${kind} Producer Created with prod_id ${producer.id}`))
                     producer.on("transportclose", ()=>{
                         console.log(chalk.yellow(`${socket.id}: producer with prod_id ${producer.id} closed`))
@@ -170,6 +189,33 @@ function initialize_socketio_Server(allowed_origins, server){
                 }catch(e){
                     console.log(e)
                 }
+            })
+
+            socket.on("ToggleVideoProducer",async (props)=>{
+                const {producerId, isOn}=props
+                const vidproducer=producers.get(producerId)
+                if(isOn===true){
+                    await vidproducer?.resume()
+                    console.log(chalk.green("Video On"))
+                }else if(isOn===false){
+                    await vidproducer?.pause()
+                    console.log(chalk.magenta("Video Off"))
+                }
+
+            })
+
+            socket.on("ToggleAudioProducer",async (props)=>{
+                const {producerId, isOn}=props
+
+                const audio_producer=producers.get(producerId)
+                if(isOn===true){
+                    await audio_producer?.resume()
+                    await TranscriberConnectionHandler.toggleConsumer(producerId, isOn)
+                }else if(isOn===false){
+                    await audio_producer?.pause()
+                    await TranscriberConnectionHandler.toggleConsumer(producerId, isOn)
+                }
+
             })
 
             socket.on("closeScreenShareConsumers", async (props, callback)=>{
@@ -238,10 +284,25 @@ function initialize_socketio_Server(allowed_origins, server){
                                             producerId:producerid,
                                             rtpCapabilities:rtpCapabilities
                                         });
-                        consumer.on("transportclose", ()=>{
-                            // console.log(peers.get(socket.id)?.producerIds)
+                        consumer.on("producerclose",async ()=>{
+
+                            const {peers, consumers}=await getOrCreateRoom(`${communityId}${channelId}`)
+                            const peer=peers.get(socket.id)
+                            const consumerId=consumer.id
+                            if(peer){
+                                if (peer.consumerIds.includes(consumerId)) {
+                                    peer.consumerIds.splice(peer.consumerIds.indexOf(consumerId), 1);
+                                }
+                                peer.consumed_ProducerIds.delete(producerid)
+                                consumers.delete(consumerId)
+                                console.log(chalk.yellow(`${socket.id}: consumer for prod_id ${producerid} closed`))
+                            }
+                        })
+
+                        consumer.on("transportclose",async ()=>{
                             console.log(chalk.yellow(`${socket.id}: consumer for prod_id ${producerid} closed`))
                         })
+                        
                         let peerInfo=peers.get(socket.id)
                         peerInfo.consumerIds.push(consumer.id)
                         peerInfo.consumed_ProducerIds.set(producerid, consumer.id)
@@ -285,9 +346,14 @@ async function getOrCreateRoom(room_id){
     const peers=new Map()
     //peers.set(socket.id, 
     //          {socket: socket, 
-    //          producerIds:[], 
-    //          consumerIds:[], 
-    //          consumed_ProducerIds=new Map()
+    //          producerIds:[]=>stores producerIds of producers of this client 
+    //          consumerIds:[]=>stores consumerIds of consumers of this client
+
+    //          consumed_ProducerIds=new Map()=>Map(producerID, consumerID) 
+    //          where producerId belongs to the producer of 
+    //          the other client's transport and consuemrid  belongs
+    //          to this client
+
     //          sendTransport:null, 
     //          recvTransport:null} )
     const producers=new Map()
@@ -296,6 +362,7 @@ async function getOrCreateRoom(room_id){
     return {router, worker, WebRTCServer, peers, producers, consumers}
 
 }
+
 
 
 function getRoomProducerIds(room_id){

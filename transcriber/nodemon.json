@@ -1,0 +1,8 @@
+{
+  "ignore": [
+    "transcriber/storage/temp/*",
+    "transcriber/storage/transcripts/*",
+    "transcriber/whisper/*",
+    "node_modules"
+  ]
+}

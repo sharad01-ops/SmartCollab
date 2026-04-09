@@ -16,7 +16,7 @@ import { ChatLayout_Context } from "../../contexts/ChatLayout-context-provider";
 const ChatLayout = () => {
     const {getUserProfile, getCommunities}=useUserInfo()
 
-    const {user_id, setUserid}=useContext(ChatLayout_Context)
+    const {user_id, setUserid, user_name, setUserName}=useContext(ChatLayout_Context)
     const throwError=useAsyncError()
 
     const {communityId, channelId}=useParams();
@@ -33,6 +33,7 @@ const ChatLayout = () => {
             setUserProfile(user_profile.UserInfo)
             if(user_profile.UserInfo){
                 setUserid(user_profile.UserInfo.user_id)
+                setUserName(user_profile.UserInfo.username)
             }
         }).catch((e)=>{
             console.log("Error getting user profile: ")

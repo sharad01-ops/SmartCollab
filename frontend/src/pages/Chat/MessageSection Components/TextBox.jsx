@@ -1,4 +1,4 @@
-import React from 'react'
+
 
 const TextBox = ({ fromUser = null, message = null, sender_id = null, sent_at = null }) => {
 

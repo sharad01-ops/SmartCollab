@@ -61,6 +61,16 @@ class RedisAPI():
         except redis.exceptions.ResponseError as e:
             if "BUSYGROUP Consumer Group name already exists" not in str(e):
                 raise
+    
+    def delete_redis_list(self, list_name):
+        """
+        Meant for deleting a redis list and all its data, 
+        but can delete any object that is accessed with a key name,
+        passed to this function, as the list_name parameter
+        """
+        self.redis_client.delete(list_name)
+        Print.green(f"deleted list {list_name}")
+
 
     def consume_from_stream(self, consumer_group_name, consumer_name, stream_name, count, block_time):
         try:

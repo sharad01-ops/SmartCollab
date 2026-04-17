@@ -72,7 +72,7 @@ const TextArea = forwardRef(({ onEnter_callback }, ref) => {
         placeholder="Message..."
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        className="flex-1 w-full bg-transparent text-[var(--sc-text-primary)] text-sm resize-none outline-none placeholder:text-[var(--sc-text-muted)] overflow-hidden min-h-[20px]"
+        className="flex-1 bg-transparent outline-none text-sm text-gray-800 placeholder:text-[#8A817C] resize-none"
       />
     </div>
   )
@@ -93,22 +93,25 @@ const MessageBar = ({ onEnter_callback }) => {
   }
 
   return (
-    <div className="w-full flex-shrink-0 border-t border-[var(--sc-border)] bg-[var(--sc-bg-elevated)] px-4 py-3">
-      <div className="flex items-end gap-2 bg-[var(--sc-bg-secondary)] rounded-xl border border-[var(--sc-border)] px-3 py-2 focus-within:ring-1 focus-within:ring-[var(--sc-accent)] focus-within:border-transparent transition-shadow">
+    <div className="w-full flex justify-center pb-4 bg-transparent">
+      <div className="w-full max-w-3xl">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[#E8E4DE] shadow-sm">
 
-        <TextArea
-          ref={textAreaRef}
-          onEnter_callback={sendText}
-        />
+          <TextArea
+            ref={textAreaRef}
+            onEnter_callback={sendText}
+          />
 
-        {/* Send button */}
-        <div
-          onClick={() => textAreaRef.current?.EnterText()}
-          className="w-8 h-8 rounded-lg bg-[var(--sc-accent)] hover:bg-[var(--sc-accent-hover)] flex items-center justify-center cursor-pointer flex-shrink-0 transition-colors"
-        >
-          <SendHorizonal className="w-4 h-4 text-white" />
+          {/* Send button */}
+          <button
+            type="button"
+            onClick={() => textAreaRef.current?.EnterText()}
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-[#2F5D50] text-white hover:opacity-90 transition"
+          >
+            <SendHorizonal className="w-4 h-4" />
+          </button>
+
         </div>
-
       </div>
     </div>
   )

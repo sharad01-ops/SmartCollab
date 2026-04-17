@@ -1,15 +1,13 @@
 import { useParams } from 'react-router-dom'
-import { ChevronDown } from 'lucide-react'
 
 const OptionsBar = () => {
   const { communityId } = useParams()
 
   return (
-    <div className="h-11 flex-shrink-0 bg-[var(--sc-bg-secondary)] border-b border-[var(--sc-border)] flex items-center justify-between px-3">
-      <span className="text-[var(--sc-text-primary)] font-semibold text-sm truncate">
-        {communityId ? `Community ${communityId}` : 'SmartCollab'}
+    <div className="h-[72px] flex-shrink-0 flex items-center px-6 bg-[#FFFFFF] border-b border-[#E8E4DE] border-opacity-60">
+      <span className="text-gray-900 font-bold text-lg truncate">
+        {communityId ? 'Community' : 'Community'}
       </span>
-      <ChevronDown className="w-4 h-4 text-[var(--sc-text-muted)] flex-shrink-0 cursor-pointer hover:text-[var(--sc-text-secondary)] transition-colors" />
     </div>
   )
 }

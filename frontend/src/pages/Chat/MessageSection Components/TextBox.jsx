@@ -1,5 +1,3 @@
-
-
 const TextBox = ({ fromUser = null, message = null, sender_id = null, sent_at = null }) => {
 
   const formatTime = (ts) => {
@@ -13,35 +11,20 @@ const TextBox = ({ fromUser = null, message = null, sender_id = null, sent_at = 
 
   return (
     message && (
-      <div className={`w-full flex px-4 py-0.5 ${fromUser ? 'justify-end' : 'justify-start'}`}>
-        <div className="max-w-[70%] flex flex-col">
-
-          {/* Sender label — only for others, not self */}
-          {!fromUser && sender_id && (
-            <span className="text-[10px] font-medium text-[var(--sc-text-muted)] mb-0.5 ml-1">
-              {`User ${sender_id}`}
-            </span>
-          )}
-
-          {/* Bubble */}
-          <div className={`
-            px-3 py-2 text-sm leading-relaxed break-words
-            ${fromUser
-              ? 'bg-[var(--sc-accent)] text-white rounded-2xl rounded-br-sm'
-              : 'bg-[var(--sc-bg-elevated)] text-[var(--sc-text-primary)] border border-[var(--sc-border)] rounded-2xl rounded-bl-sm'
-            }
-          `}>
-            {message}
+      <div className="w-full flex px-4 py-0.5">
+        {fromUser ? (
+          <div className="flex justify-end w-full">
+            <div className="bg-[#F4E6C8] text-[#2F5D50] px-4 py-2 rounded-2xl rounded-br-none max-w-[70%] shadow-sm">
+              {message}
+            </div>
           </div>
-
-          {/* Timestamp */}
-          {formatTime(sent_at) && (
-            <span className={`text-[10px] text-[var(--sc-text-muted)] mt-0.5 ${fromUser ? 'text-right mr-1' : 'ml-1'}`}>
-              {formatTime(sent_at)}
-            </span>
-          )}
-
-        </div>
+        ) : (
+          <div className="flex justify-start w-full">
+            <div className="bg-[#2F5D50] text-white px-4 py-2 rounded-2xl rounded-bl-none max-w-[70%] shadow-sm">
+              {message}
+            </div>
+          </div>
+        )}
       </div>
     )
   )

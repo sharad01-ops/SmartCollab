@@ -1,55 +1,35 @@
-import { useRef, useContext } from "react"
+import { useRef } from "react"
 import UserProfile from "./GroupBar Components/UserProfile"
 import CommunityTab from "./GroupBar Components/CommunityTab"
 import ScrollBar from "../../common components/ScrollBar"
-import { Sun, Moon } from "lucide-react"
-import { Global_Context } from "../../../contexts/Global-context-provider"
 
 const GroupBar = ({ username, email, communities }) => {
   const scrollbarRef = useRef(null)
-  const { theme, toggleTheme } = useContext(Global_Context)
 
   return (
-    <div className="w-12 h-full bg-[var(--sc-bg-secondary)] flex flex-col items-center py-2 border-r border-[var(--sc-border)] flex-shrink-0">
+    <div className="w-[72px] bg-[#F9F7F4] border-r border-[#E8E4DE] border-opacity-60 flex flex-col items-center py-4 h-full">
 
       {/* Logo */}
-      <div className="w-8 h-8 rounded-lg bg-[var(--sc-accent)] flex items-center justify-center mb-3 flex-shrink-0 select-none">
-        <span className="font-[Jersey10Regular] text-white text-sm leading-none">SC</span>
+      <div className="mb-6">
+        <svg className="w-8 h-8 fill-[#2F5D50]" viewBox="0 0 24 24">
+          <circle cx="12" cy="6" r="3" />
+          <circle cx="6" cy="12" r="3" />
+          <circle cx="18" cy="12" r="3" />
+          <circle cx="12" cy="18" r="3" />
+        </svg>
       </div>
 
-      {/* Divider */}
-      <div className="w-6 h-px bg-[var(--sc-border)] mb-2 flex-shrink-0" />
-
-      {/* Community list */}
-      <div className="flex-1 w-full min-h-0 overflow-hidden">
-        <ScrollBar ref={scrollbarRef}>
+      {/* Community tabs */}
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col items-center gap-3">
+        <ScrollBar ref={scrollbarRef} className="w-[72px]">
           {communities.map((community, index) => (
-            <CommunityTab
-              key={index}
-              communityId={community.community_id}
-              communityName={community.community_name}
-            />
+            <CommunityTab key={index} communityId={community.community_id} communityName={community.community_name} />
           ))}
         </ScrollBar>
       </div>
 
-      {/* Divider */}
-      <div className="w-6 h-px bg-[var(--sc-border)] mt-2 mb-2 flex-shrink-0" />
-
-      {/* Theme toggle */}
-      <button
-        onClick={toggleTheme}
-        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-        className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 text-[var(--sc-text-muted)] hover:text-[var(--sc-text-primary)] hover:bg-[var(--sc-bg-tertiary)] transition-colors flex-shrink-0"
-      >
-        {theme === 'dark'
-          ? <Sun className="w-4 h-4" />
-          : <Moon className="w-4 h-4" />
-        }
-      </button>
-
       {/* User profile */}
-      <div className="flex-shrink-0" title={`${username}\n${email}`}>
+      <div className="mt-auto flex flex-col items-center pb-2">
         <UserProfile username={username} email={email} />
       </div>
 

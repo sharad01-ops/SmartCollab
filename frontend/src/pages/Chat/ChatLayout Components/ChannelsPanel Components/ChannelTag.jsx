@@ -12,8 +12,8 @@ const ChannelTag = ({ channel_name, channel_id }) => {
         flex items-center gap-1.5 h-8 mx-2 my-0.5 px-2 rounded-md
         cursor-pointer select-none transition-colors duration-100 text-sm
         ${isActive
-          ? 'bg-[var(--sc-accent-subtle)] text-[var(--sc-accent)] font-medium'
-          : 'text-[var(--sc-text-secondary)] hover:bg-[var(--sc-bg-tertiary)] hover:text-[var(--sc-text-primary)]'
+          ? 'bg-[#F4E6C8] text-[#2F5D50] font-medium'
+          : 'text-[#8A817C] hover:bg-[#F9F7F4] hover:text-gray-900'
         }
       `}
       onClick={() => navigate(`/chats/${url_params.communityId}/${channel_id}`)}

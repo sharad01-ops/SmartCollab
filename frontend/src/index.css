@@ -2,71 +2,153 @@
 @plugin "tailwind-scrollbar";
 @variant dark (&:where(.dark, .dark *));
 
+/* ─── Fonts ──────────────────────────────────────────────────── */
 @font-face {
   font-family: 'Inter';
   src: url('/Fonts/Inter-VariableFont_opsz,wght.ttf') format('truetype');
   font-weight: 100 900;
   font-display: swap;
 }
-
 @font-face {
   font-family: 'Jersey10Regular';
   src: url('/Fonts/Jersey10-Regular.ttf') format('truetype');
   font-display: swap;
 }
-
 @font-face {
   font-family: 'PoppinsRegular';
   src: url('/Fonts/Poppins-Regular.ttf') format('truetype');
   font-display: swap;
 }
 
+/* ─── Design System Tokens ───────────────────────────────────── */
 :root {
-  --sc-bg-primary: #F4F4F5;
-  --sc-bg-secondary: #E9E9EC;
-  --sc-bg-tertiary: #DDDDE0;
-  --sc-bg-elevated: #FFFFFF;
-  --sc-border: #D1D1D6;
-  --sc-text-primary: #09090B;
-  --sc-text-secondary: #52525B;
-  --sc-text-muted: #A1A1AA;
-  --sc-accent: #2563EB;
-  --sc-accent-hover: #1D4ED8;
-  --sc-accent-subtle: #EFF6FF;
-  --sc-danger: #DC2626;
-  --sc-success: #16A34A;
+  /* Landing page / auth surfaces */
+  --sc-surface:             #fcf9f8;
+  --sc-surface-low:         #f6f3f2;
+  --sc-surface-container:   #f0eded;
+  --sc-surface-high:        #eae7e7;
+  --sc-surface-highest:     #e4e2e1;
+  --sc-surface-lowest:      #ffffff;
+
+  /* Brand — Brown */
+  --sc-primary:             #77583a;
+  --sc-primary-container:   #d8b28e;
+  --sc-on-primary:          #ffffff;
+  --sc-primary-dim:         #e7bf9a;
+
+  /* Accent — British Green */
+  --sc-tertiary:            #316948;
+  --sc-tertiary-container:  #8bc69f;
+  --sc-on-tertiary:         #ffffff;
+
+  /* Typography */
+  --sc-on-surface:          #1b1c1c;
+  --sc-on-surface-variant:  #4d453c;
+  --sc-on-surface-muted:     #7f766a;
+
+  /* Borders (use at low opacity) */
+  --sc-outline:             #7f766a;
+  --sc-outline-variant:    #d1c5b8;
+
+  /* Error */
+  --sc-error:              #ba1a1a;
+  --sc-on-error:          #ffffff;
+
+  /* Chat UI specific */
+  --sc-chat-accent:        #436556;
+  --sc-chat-bubble-dark:   #2e3131;
 }
 
-.dark {
-  --sc-bg-primary: #0F0F10;
-  --sc-bg-secondary: #18181B;
-  --sc-bg-tertiary: #212124;
-  --sc-bg-elevated: #27272A;
-  --sc-border: #3F3F46;
-  --sc-text-primary: #FAFAFA;
-  --sc-text-secondary: #A1A1AA;
-  --sc-text-muted: #52525B;
-  --sc-accent: #3B82F6;
-  --sc-accent-hover: #2563EB;
-  --sc-accent-subtle: #172554;
-  --sc-danger: #EF4444;
-  --sc-success: #22C55E;
-}
-
+/* ─── Reset ──────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; padding: 0; }
 body {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.5;
-  background-color: var(--sc-bg-primary);
-  color: var(--sc-text-primary);
+  background-color: var(--sc-surface);
+  color: var(--sc-on-surface);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* SimpleBar custom scrollbar colors */
+/* ─── Glassmorphism Utilities ────────────────────────────────── */
+.glass-nav {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.glass-card {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.ambient-shadow {
+  box-shadow: 0 20px 40px rgba(27, 28, 28, 0.06);
+}
+
+/* ─── Image Utilities ────────────────────────────────────────── */
+.image-melt-bottom {
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+.image-melt-right {
+  mask-image: linear-gradient(to right, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 60%, transparent 100%);
+}
+
+/* ─── Material Symbols ───────────────────────────────────────── */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  vertical-align: middle;
+}
+
+/* ─── Chat Custom Scrollbar ──────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+/* ─── SimpleBar (keep for chat) ──────────────────────────────── */
 .simplebar-scrollbar::before {
-  background-color: var(--sc-border) !important;
+  background-color: var(--sc-outline-variant) !important;
   border-radius: 99px;
 }
 .simplebar-track { background: transparent !important; }
+
+/* ─── Chat mint gradient background ────────────────────────────── */
+.bg-mint-gradient {
+  background: linear-gradient(135deg, #c5dcd4 0%, #e8f1ed 100%);
+}
+
+/* ─── Landing Page Animations ─────────────────────────────────── */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out both;
+}
+
+/* ─── Selection Color ─────────────────────────────────────────── */
+::selection {
+  background: rgba(74, 124, 89, 0.2);
+  color: #4A7C59;
+}
+::-moz-selection {
+  background: rgba(74, 124, 89, 0.2);
+  color: #4A7C59;
+}

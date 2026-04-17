@@ -101,8 +101,8 @@ const ChatMessagesSection = () => {
     return (
       <div className="w-full h-full flex flex-col">
         <ChatHeader />
-        <div className="flex-1 bg-[var(--sc-bg-primary)] flex justify-center items-center">
-          <div className="w-6 h-6 border-2 border-[var(--sc-border)] border-t-[var(--sc-accent)] rounded-full animate-spin" />
+        <div className="flex-1 bg-[#F5F3EF] flex justify-center items-center">
+          <div className="w-6 h-6 border-2 border-[#2F5D50]/20 border-t-[#2F5D50] rounded-full animate-spin" />
         </div>
         <MessageBar onEnter_callback={sendMessage} />
       </div>
@@ -110,10 +110,10 @@ const ChatMessagesSection = () => {
   }
 
   return (
-    <div className="bg-[var(--sc-bg-primary)] w-full h-full flex flex-col">
+    <div className="bg-[#F5F3EF] w-full h-full flex flex-col">
       <ChatHeader />
 
-      <div className="flex-1 bg-[var(--sc-bg-primary)] overflow-y-hidden flex flex-col">
+      <div className="flex-1 bg-[#F5F3EF] overflow-y-auto custom-scrollbar flex flex-col">
         <ScrollBar ref={scrollbarRef}>
           <div className="pt-4 pb-2">
             <div className="space-y-0.5">

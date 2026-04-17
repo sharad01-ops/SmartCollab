@@ -5,6 +5,7 @@ import { get_community_channels } from "../../../services/community_services"
 import ScrollBar from "../../common components/ScrollBar"
 import { useEffect, useRef, useContext } from "react"
 import { ChatLayout_Context } from "../../../contexts/ChatLayout-context-provider"
+import { Search } from "lucide-react"
 
 const ChannelsPanel = () => {
   const {communityId} = useParams()
@@ -32,27 +33,41 @@ const ChannelsPanel = () => {
     console.log(error.status)
   }
 
-
-
-  //isLoading && communityId
   if(isLoading && communityId){
     return(
-      <div className="bg-[var(--sc-bg-secondary)] w-full h-full flex flex-col overflow-hidden">
-        <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--sc-text-muted)] flex-shrink-0">
-          Channels
-        </p>
-        <p className="text-[var(--sc-text-muted)] text-xs px-3 py-3">Loading...</p>
+      <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col">
+        <div className="relative mb-4">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search channels..."
+            className="w-full bg-[#F9F7F4] border-none rounded-xl py-3 pl-12 pr-4 text-sm text-gray-900 placeholder:text-[#8A817C]"
+            disabled
+          />
+        </div>
+        <p className="text-lg font-semibold text-gray-900 mb-4">Community</p>
+        <p className="text-[#8A817C] text-sm">Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-[var(--sc-bg-secondary)] w-full h-full flex flex-col overflow-hidden">
+    <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col">
 
-      <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--sc-text-muted)] flex-shrink-0">
-        Channels
-      </p>
+      {/* Search bar */}
+      <div className="relative mb-4">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search channels..."
+          className="w-full bg-[#F9F7F4] border-none rounded-xl py-3 pl-12 pr-4 text-sm text-gray-900 placeholder:text-[#8A817C]"
+        />
+      </div>
 
+      {/* Community heading */}
+      <p className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Community</p>
+
+      {/* Channel list */}
       <div className="flex-1 overflow-hidden">
         <ScrollBar ref={scrollbarRef}>
           {

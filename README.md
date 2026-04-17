@@ -2,7 +2,7 @@
 SmartCollab : An AI -Powered Multilingual Platform for Real-Time Collaboration
 
 # Installation, Setup and Running
-
+APPAADAKDFdgbdshfbdshsdjk
 ## Postgres
 - install postgres installer from <a>https://www.enterprisedb.com/downloads/postgres-postgresql-downloads</a>
 - start the installer and go through the installation steps.

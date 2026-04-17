@@ -1,8 +1,8 @@
-
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import Home from './pages/Home'
 import Login from './pages/Login'
+import Signup from './pages/Signup'
 import {ChatLayout} from './pages/Chat/ChatLayout'
 import ChatMessagesSection from './pages/Chat/ChatMessagesSection'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
@@ -22,10 +22,15 @@ const router = createBrowserRouter([
     element: 
       <Home />
     ,
+    errorElement:<ErrorFallback/>
   },
   {
     path: "/login",
     element: <Login />
+  },
+  {
+    path: "/signup",
+    element: <Signup />
   },
   {
     path:"/chats/:communityId?",

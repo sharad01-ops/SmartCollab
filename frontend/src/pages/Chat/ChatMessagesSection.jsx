@@ -6,16 +6,11 @@ import { useContext, useEffect, useRef, useState } from "react"
 import { ChatLayout_Context } from "../../contexts/ChatLayout-context-provider"
 import { get_channel_messages } from "../../services/channel_services"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Loader2 } from "lucide-react"
 import ScrollBar from "../common components/ScrollBar"
 import { WebsocketsContext } from "../../contexts/WebSockets-context-provider"
 import { wsClient } from "../../api/websocket"
 
-
-
-
 const ChatMessagesSection = () => {
-
   const {communityId, channelId}=useParams()
 
   const scrollbarRef=useRef(null)
@@ -102,61 +97,45 @@ const ChatMessagesSection = () => {
     throw error
   }
 
-
-  if(isLoading){
+  if (isLoading) {
     return (
       <div className="w-full h-full flex flex-col">
-        <ChatHeader/>
-        <div className="w-full h-full bg-gray-600 flex justify-center items-center">
-          <Loader2 className="animate-spin"/>
+        <ChatHeader />
+        <div className="flex-1 bg-[#F5F3EF] flex justify-center items-center">
+          <div className="w-6 h-6 border-2 border-[#2F5D50]/20 border-t-[#2F5D50] rounded-full animate-spin" />
         </div>
-        <MessageBar/>
+        <MessageBar onEnter_callback={sendMessage} />
       </div>
     )
   }
 
-
   return (
-    <div className='bg-amber-500 w-full h-full flex flex-col'>
-      {/* Header */}
-        <ChatHeader/>
+    <div className="bg-[#F5F3EF] w-full h-full flex flex-col">
+      <ChatHeader />
 
-      {/* Messages */} 
-      <div className='bg-gray-600 h-full w-full overflow-y-hidden flex'>
-        <ScrollBar ref={scrollbarRef} barWidth={10}>
-        {
-          data && Array.isArray(data.Messages) &&
+      <div className="flex-1 bg-[#F5F3EF] overflow-y-auto custom-scrollbar flex flex-col">
+        <ScrollBar ref={scrollbarRef}>
+          <div className="pt-4 pb-2">
+            <div className="space-y-0.5">
+              {
+              data && Array.isArray(data.Messages) &&
 
-            data.Messages.map((message_obj, index)=>{
-              return(
-                <div key={index}>
-                  <TextBox fromUser={message_obj.sender_id=="user"} message={message_obj.message} sender_id={message_obj.sender_id}/>
-                </div>
-              )
-            })
-          
-          
-          // Array.from({length:20}, (v,i)=>{return i}).map( (elem)=>{
-          //   return (
-          //     <div key={elem} className="w-full">
-          //       {
-          //         elem%2==0 ? (
-          //           <TextBox fromUser={true} message={"From User"}/>
-          //         ):(
-          //           <TextBox fromUser={false} message={"From Sender"}/>
-          //         )
-          //       }
-          //     </div>
-          //   )
-          // } )
-        }
+              data.Messages.map((msg, i) => (
+                  <TextBox
+                    key={msg.message_id ?? i}
+                    fromUser={msg.sender_id == "user"}
+                    message={msg.message}
+                    sender_id={msg.sender_id}
+                    sent_at={msg.sent_at}
+                  />
+                ))
+              }
+            </div>
+          </div>
         </ScrollBar>
-        
       </div>
 
-      {/* Message Bar */}
-      <MessageBar sendMessage_callback={sendMessage}/>
-
+      <MessageBar onEnter_callback={sendMessage} />
     </div>
   )
 }

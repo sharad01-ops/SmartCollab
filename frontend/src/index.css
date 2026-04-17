@@ -1,75 +1,154 @@
 @import "tailwindcss";
-@tailwind utilities;
+@plugin "tailwind-scrollbar";
+@variant dark (&:where(.dark, .dark *));
 
+/* ─── Fonts ──────────────────────────────────────────────────── */
 @font-face {
-    font-family: "PacificoRegular";
-    src: url("/Fonts/Pacifico-Regular.ttf") format("truetype");
-    font-style: normal;
-    font-display: swap;
+  font-family: 'Inter';
+  src: url('/Fonts/Inter-VariableFont_opsz,wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
 }
-
 @font-face {
-    font-family: "Inter";
-    src: url("/Fonts/Inter-VariableFont_opsz,wght.ttf") format("truetype");
-    font-style: normal;
-    font-display: swap;
+  font-family: 'Jersey10Regular';
+  src: url('/Fonts/Jersey10-Regular.ttf') format('truetype');
+  font-display: swap;
 }
-
 @font-face {
-    font-family: "Jersey10Regular";
-    src: url("/Fonts/Jersey10-Regular.ttf") format("truetype");
-    font-style: normal;
-    font-display: swap;
+  font-family: 'PoppinsRegular';
+  src: url('/Fonts/Poppins-Regular.ttf') format('truetype');
+  font-display: swap;
 }
 
-@font-face{
-    font-family: "PoppinsRegular";
-    src: url("/Fonts/Poppins-Regular.ttf") format("truetype");
-    font-style: normal;
-    font-display: swap;
+/* ─── Design System Tokens ───────────────────────────────────── */
+:root {
+  /* Landing page / auth surfaces */
+  --sc-surface:             #fcf9f8;
+  --sc-surface-low:         #f6f3f2;
+  --sc-surface-container:   #f0eded;
+  --sc-surface-high:        #eae7e7;
+  --sc-surface-highest:     #e4e2e1;
+  --sc-surface-lowest:      #ffffff;
+
+  /* Brand — Brown */
+  --sc-primary:             #77583a;
+  --sc-primary-container:   #d8b28e;
+  --sc-on-primary:          #ffffff;
+  --sc-primary-dim:         #e7bf9a;
+
+  /* Accent — British Green */
+  --sc-tertiary:            #316948;
+  --sc-tertiary-container:  #8bc69f;
+  --sc-on-tertiary:         #ffffff;
+
+  /* Typography */
+  --sc-on-surface:          #1b1c1c;
+  --sc-on-surface-variant:  #4d453c;
+  --sc-on-surface-muted:     #7f766a;
+
+  /* Borders (use at low opacity) */
+  --sc-outline:             #7f766a;
+  --sc-outline-variant:    #d1c5b8;
+
+  /* Error */
+  --sc-error:              #ba1a1a;
+  --sc-on-error:          #ffffff;
+
+  /* Chat UI specific */
+  --sc-chat-accent:        #436556;
+  --sc-chat-bubble-dark:   #2e3131;
 }
 
-@font-face{
-    font-family: "Saman";
-    src: url("/Fonts/SAMAN___.ttf") format("truetype");
-    font-style: normal;
-    font-display: swap;
+/* ─── Reset ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  background-color: var(--sc-surface);
+  color: var(--sc-on-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-
-@layer utilities {
-  .text-outline {
-    -webkit-text-stroke: 1px black; /* Adjust width and color as needed */
-    -webkit-text-fill-color: transparent; /* Makes the inside transparent */
-  }
-  .text-outline-white {
-    -webkit-text-stroke: 0.1px white;
-    
-  }
-  /* Add more variations if needed */
-
+/* ─── Glassmorphism Utilities ────────────────────────────────── */
+.glass-nav {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.glass-card {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.ambient-shadow {
+  box-shadow: 0 20px 40px rgba(27, 28, 28, 0.06);
 }
 
+/* ─── Image Utilities ────────────────────────────────────────── */
+.image-melt-bottom {
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+.image-melt-right {
+  mask-image: linear-gradient(to right, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 60%, transparent 100%);
+}
 
+/* ─── Material Symbols ───────────────────────────────────────── */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  vertical-align: middle;
+}
 
-@layer components {
-  .sb-scope {
-    --sb-width: 10px;
-    --sb-thumb: #ff00dd;
-    --sb-track: transparent;
+/* ─── Chat Custom Scrollbar ──────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+/* ─── SimpleBar (keep for chat) ──────────────────────────────── */
+.simplebar-scrollbar::before {
+  background-color: var(--sc-outline-variant) !important;
+  border-radius: 99px;
+}
+.simplebar-track { background: transparent !important; }
+
+/* ─── Chat mint gradient background ────────────────────────────── */
+.bg-mint-gradient {
+  background: linear-gradient(135deg, #c5dcd4 0%, #e8f1ed 100%);
+}
+
+/* ─── Landing Page Animations ─────────────────────────────────── */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
   }
-
-  .sb-scope .simplebar-track.simplebar-vertical {
-    width: var(--sb-width) !important;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
+}
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out both;
+}
 
-  .sb-scope .simplebar-scrollbar::before {
-    background-color: var(--sb-thumb) !important;
-    
-    border-radius: 9999px;
-  }
-
-  .sb-scope .simplebar-track {
-    background-color: var(--sb-track);
-  }
+/* ─── Selection Color ─────────────────────────────────────────── */
+::selection {
+  background: rgba(74, 124, 89, 0.2);
+  color: #4A7C59;
+}
+::-moz-selection {
+  background: rgba(74, 124, 89, 0.2);
+  color: #4A7C59;
 }

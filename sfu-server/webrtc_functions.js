@@ -65,9 +65,16 @@ async function createWebRtcTransport( router, WebRTCServer, peerId) {
     return transport
 }
 
-async function createProducer(transport, ) {
-    
+async function createPlainTransport( router) {
+
+    const transport=await router.createPlainTransport({
+        listenInfo : { protocol: "udp", ip: "127.0.0.1" },
+        rtcpMux    : true,
+        comedia    : false
+    });
+
+    return transport
 }
 
 
-module.exports={createWorkers, create_router, createWebRtcTransport}
+module.exports={createWorkers, create_router, createWebRtcTransport, createPlainTransport}

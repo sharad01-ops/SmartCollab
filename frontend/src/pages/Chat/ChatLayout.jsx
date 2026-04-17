@@ -13,23 +13,18 @@ import { useUserInfo } from "../../hooks/user_hooks";
 import { ChatLayout_Context } from "../../contexts/ChatLayout-context-provider";
 
 
-
-
-
 const ChatLayout = () => {
-
     const {getUserProfile, getCommunities}=useUserInfo()
 
-    const {user_id, setUserid}=useContext(ChatLayout_Context)
+    const {user_id, setUserid, user_name, setUserName}=useContext(ChatLayout_Context)
     const throwError=useAsyncError()
 
     const {communityId, channelId}=useParams();
 
     const [UserProfile, setUserProfile]=useState(null)
     const [UserCommunities, setUserCommunities]=useState(null)
-
- 
-
+    
+  
     useEffect(()=>{
 
         getUserProfile().then((user_profile)=>{
@@ -38,19 +33,12 @@ const ChatLayout = () => {
             setUserProfile(user_profile.UserInfo)
             if(user_profile.UserInfo){
                 setUserid(user_profile.UserInfo.user_id)
+                setUserName(user_profile.UserInfo.username)
             }
         }).catch((e)=>{
             console.log("Error getting user profile: ")
             throwError(e)
         })
-
-        // if(userInfo){
-        //     setUserProfile(userInfo.UserInfo)
-        // }
-        
-        // if(userCommunities){
-        //     setUserCommunities(userCommunities.UserCommunities)
-        // }
 
 
         getCommunities().then(
@@ -64,79 +52,44 @@ const ChatLayout = () => {
         })
 
 
-        if(!communityId) return;
-
-        // console.log("url parameters: ",communityId,", ",channelId)
-        // getCommunityChannels(communityId).then((channels)=>{
-        //     console.log("fetched community channels: ",channels.Channels)
-        //     setChannels(channels.Channels)
-        // }).catch((e)=>{
-        //     console.error(`Error while getting Channels for community ${communityId}: \n ${e}`)
-        //     // showBoundary(e)
-        // })
-
-        // setCurrentCommunity(communityId)
-
-        if(!channelId) return
-
-        // getMessages(communityId,channelId).then((messages)=>{
-        //     console.log(messages)
-        // }).catch((e)=>{
-        //     console.error(`Error while getting Messages for channel ${channelId}: \n ${e}`)
-        // })
-
-        // setCurrentChannel(channelId)
+        if(!communityId || !channelId) return;
 
 
     }, [])
 
-
-
-
-
-
-    if(!UserProfile || !UserCommunities ){
-        return null;
-    }
-
-
+  if (!UserProfile || !UserCommunities ) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-[#F5F3EF]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[#2F5D50]/20 border-t-[#2F5D50] rounded-full animate-spin" />
+          <span className="text-[#8A817C] text-sm">Loading workspace...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="h-screen w-full bg-green-500 flex flex-row">
-        <div className="h-full max-w-[300px] w-full bg-blue-400">
-
-            <div className="w-ful h-full flex flex-row">
-                    <GroupBar 
-                        username={UserProfile.username} 
-                        email={UserProfile.email} 
-                        communities={UserCommunities}
-                    />
-                
-                <div className="flex flex-col min-w-0 w-full h-full">
-                    <OptionsBar/>
-                    <SearchBar/>
-                    <ChannelsPanel />
-
-                    
-                </div>
-
-            </div>
-
-        </div>
-
-        {channelId ?(
-            <div className="w-full h-full">
-                <Outlet />
-            </div>
-        ):(
-            <EmptyChatSection/>
-        )
-        
-        }
-        
+    <div className="w-screen h-screen flex bg-[#F5F3EF] overflow-hidden">
       
+      {/* GroupBar */}
+      <GroupBar
+        username={UserProfile.username}
+        email={UserProfile.email}
+        communities={UserCommunities}
+      />
+      
+      {/* Channel Panel */}
+      <div className="w-[280px] bg-[#FFFFFF] border-r border-[#E8E4DE] border-opacity-60 flex flex-col">
+        <OptionsBar />
+        <ChannelsPanel />
+      </div>
+      
+      {/* Chat Area */}
+      <div className="flex-1 bg-[#F5F3EF] flex flex-col">
+        {channelId ? <Outlet /> : <EmptyChatSection />}
+      </div>
     </div>
   )
 }
 
-export {ChatLayout}
+export { ChatLayout }

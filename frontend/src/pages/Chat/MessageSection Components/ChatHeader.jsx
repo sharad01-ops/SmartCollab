@@ -1,48 +1,45 @@
-import { Video, EllipsisVertical } from "lucide-react"
-import FloatingDiv from "../../common components/FloatingDiv"
-import { useNavigate, useParams } from "react-router-dom"
-
-
+import { useNavigate, useParams } from 'react-router-dom'
+import { EllipsisVertical, Video, Hash } from 'lucide-react'
+import FloatingDiv from '../../common components/FloatingDiv'
 
 const ChatHeader = () => {
-
-  const navigate=useNavigate()
-  const url_params=useParams()
+  const navigate = useNavigate()
+  const url_params = useParams()
 
   return (
-    <div className='bg-gray-800 text-white w-full h-full max-h-[2.5rem] flex justify-end items-center'>
+    <div className="h-12 flex-shrink-0 bg-[var(--sc-bg-elevated)] border-b border-[var(--sc-border)] flex items-center px-4 justify-between">
+
+      {/* Left: channel name */}
+      <div className="flex items-center gap-2">
+        <Hash className="w-4 h-4 text-[var(--sc-text-muted)]" />
+        <span className="text-[var(--sc-text-primary)] font-semibold text-sm">
+          {url_params.channelId ? `Channel ${url_params.channelId}` : 'Channel'}
+        </span>
+      </div>
+
+      {/* Right: FloatingDiv trigger — all FloatingDiv logic preserved */}
       <FloatingDiv
-        ToggleButtonComponent={
-
-          ()=>{
-            return (
-              <div
-                className="hover:bg-gray-500 rounded-full p-0.5"
-              >
-                < EllipsisVertical/>
-              </div>
-            )
-          }
-        }
-        
+        ToggleButtonComponent={() => (
+          <div className="p-1.5 rounded-md hover:bg-[var(--sc-bg-tertiary)] text-[var(--sc-text-muted)] hover:text-[var(--sc-text-secondary)] transition-colors cursor-pointer">
+            <EllipsisVertical className="w-4 h-4" />
+          </div>
+        )}
         content_parent_classes=""
-        button_parent_styles="mr-[5px]"
+        button_parent_styles=""
       >
-        <div
-          className="bg-gray-800 p-1 rounded-xl transition-all duration-100 border-[1px] border-[#ffffff87] mx-1"
-        >
-          <div 
-            className="flex flex-row items-center hover:bg-gray-700 select-none cursor-pointer justify-between p-2 gap-2 rounded-lg"
-
-            onClick={()=>{
-                      navigate(`/chats/${url_params.communityId}/${url_params.channelId}/videocall`)
-                  }}
+        {/* Dropdown panel */}
+        <div className="bg-[var(--sc-bg-elevated)] border border-[var(--sc-border)] rounded-lg shadow-sm p-1 min-w-[160px]">
+          {/* Video Call menu item — exact onClick preserved */}
+          <div
+            className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-[var(--sc-text-primary)] hover:bg-[var(--sc-bg-tertiary)] cursor-pointer select-none transition-colors"
+            onClick={() => navigate(`/chats/${url_params.communityId}/${url_params.channelId}/videocall`)}
           >
-            <Video className="aspect-12/14 w-[20px]"/>
-            <span className="font-[Inter] text-sm">Video Call</span>
+            <Video className="w-4 h-4 text-[var(--sc-text-secondary)]" />
+            <span>Video Call</span>
           </div>
         </div>
       </FloatingDiv>
+
     </div>
   )
 }

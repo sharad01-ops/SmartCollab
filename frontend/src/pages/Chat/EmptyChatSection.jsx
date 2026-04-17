@@ -1,17 +1,10 @@
-import { get_community_channels } from "../../services/community_services"
-
+import { MessageSquare } from 'lucide-react'
 
 const EmptyChatSection = () => {
   return (
-    <div className='bg-amber-500 w-full h-full flex flex-col'>
-      {/* Header */}
-      <div className='bg-red-500 w-full'>
-        Empty Chat Section Header
-      </div>
-      {/* Messages */}
-      <div className='bg-red-300 h-full w-full'>
-        Empty Message Section
-      </div>
+    <div className="flex-1 flex flex-col items-center justify-center bg-[#F5F3EF]">
+      <MessageSquare className="text-[#E8E4DE]" style={{ fontSize: '5rem', opacity: 0.5 }} />
+      <p className="text-[#8A817C] text-sm mt-4 font-medium">Select a channel to start collaborating</p>
     </div>
   )
 }

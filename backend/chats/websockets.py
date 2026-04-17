@@ -55,8 +55,14 @@ async def Broadcaster():
                                             manager.active_connections[uid].send_queue.put_nowait(data)
                                         except asyncio.QueueFull as e:
                                             Print.red("Sender Queue Full, cant broadcast message")
+                                        except KeyError as e:
+                                            Print.red(f"Error: {e} \n uid not present in active connections")
+                                            print("Active Connections: ",manager.active_connections)
                                         except Exception as e:
                                             Print.red(f"Error: {e} \n cant broadcast message")
+                                            raise Exception(e)
+
+
                     else:
                         Print.yellow("No messages in stream")
                         await asyncio.sleep(1)

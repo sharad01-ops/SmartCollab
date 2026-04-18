@@ -4,7 +4,7 @@ const {SFUConnectionHandler}=require('./SFUConnectionHandler')
 require("dotenv").config()
 const dgram=require('dgram')
 const UserPipeline=require("./Pipeline")
-
+const fs=fs
 const PORT=process.env.PORT
 const SFU_URL=process.env.SFU_URL
 
@@ -85,6 +85,10 @@ setInterval(() => {
 
 function HandleRoomClose(roomId){
   liveAudioService.handleRoomEnded(roomId)
+  //const transcripts=open transcripts.json
+  //if(transcripts.participants.length==1){
+  //delete transcripts.json
+//}
   console.log(chalk.green("Room Closed. Transcriber Closed also"))
 }
 

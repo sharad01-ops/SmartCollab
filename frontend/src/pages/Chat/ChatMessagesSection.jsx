@@ -110,8 +110,10 @@ const ChatMessagesSection = () => {
   }
 
   return (
-    <div className="bg-[#F5F3EF] w-full h-full flex flex-col">
-      <ChatHeader />
+    <div className="bg-[var(--sc-bg-primary)] w-full h-full flex flex-col">
+      <ChatHeader 
+        queryClient={queryClient}
+      />
 
       <div className="flex-1 bg-[#F5F3EF] overflow-y-auto custom-scrollbar flex flex-col">
         <ScrollBar ref={scrollbarRef}>

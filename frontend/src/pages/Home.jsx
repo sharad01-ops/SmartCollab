@@ -496,40 +496,207 @@ const Testimonials = () => {
   )
 }
 
+const TEAM = [
+  {
+    name: "Sharad Jha",
+    role: "Team Lead",
+    tagline: "SmartCollab is a platform that provides a one-stop solution for seamless collaboration.",
+    description: "I led the vision, architecture planning, and ensured smooth execution across the team.",
+    img: "/assets/1.jpeg",
+    color: "#6366f1",
+    zone: { top: "15%", left: "8%", width: "16%", height: "65%" },
+    cardPosition: "left",
+  },
+  {
+    name: "Aditya Dwivedi",
+    role: "System Architecture",
+    tagline: "I architected the robust backend infrastructure ensuring scalability and performance.",
+    description: "Every system component was designed with precision to handle high-volume data flow.",
+    img: "/assets/2.jpeg",
+    color: "#eab308",
+    zone: { top: "15%", left: "26%", width: "18%", height: "65%" },
+    cardPosition: "left",
+  },
+  {
+    name: "Krishna Sonawane",
+    role: "Backend Engineer",
+    tagline: "I crafted seamless server-side logic that powers SmartCollab's real-time capabilities.",
+    description: "Optimized APIs and database queries to ensure lightning-fast response times.",
+    img: "/assets/3.jpeg",
+    color: "#22c55e",
+    zone: { top: "15%", left: "46%", width: "18%", height: "65%" },
+    cardPosition: "right",
+  },
+  {
+    name: "Aditya Paliwal",
+    role: "Frontend Developer",
+    tagline: "I designed and built the intuitive user interfaces you see today.",
+    description: "Every interaction was crafted to feel natural, responsive, and delightful across all devices.",
+    img: "/assets/4.jpeg",
+    color: "#3b82f6",
+    zone: { top: "15%", left: "66%", width: "18%", height: "65%" },
+    cardPosition: "right",
+  },
+]
+
+const useTypingEffect = (text, active, delay = 25) => {
+  const [displayedText, setDisplayedText] = useState("")
+
+  useEffect(() => {
+    if (!active) {
+      setDisplayedText("")
+      return
+    }
+
+    setDisplayedText("")
+    let index = 0
+    const interval = setInterval(() => {
+      if (index < text.length) {
+        setDisplayedText((prev) => prev + text[index])
+        index++
+      } else {
+        clearInterval(interval)
+      }
+    }, delay)
+
+    return () => clearInterval(interval)
+  }, [text, active, delay])
+
+  return displayedText
+}
+
 const MeetTheTeam = () => {
-  const team = [
-    { name: 'Sharad Jha', role: 'Team Lead', img: '/assets/Sharad.jpeg' },
-    { name: 'Aditya Dwivedi', role: 'System Architecture', img: '/assets/AD.jpeg' },
-    { name: 'Krishna Sonawane', role: 'Backend Engineer', img: '/assets/KS.jpeg' },
-    { name: 'Aditya Paliwal', role: 'Frontend Developer', img: '/assets/AP.jpeg' },
-  ]
+  const [activeIndex, setActiveIndex] = useState(null)
+  const containerRef = useRef(null)
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setActiveIndex(null)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
 
   return (
-    <section id="architects" className="py-24 bg-stone-100">
+    <section id="architects" className="py-12 bg-stone-100">
       <div className="max-w-7xl mx-auto px-8">
-        <div className="text-center mb-20">
+        <div className="text-center mb-8">
           <span className="text-[var(--sc-tertiary)] font-['Playfair_Display'] italic font-semibold">Our People</span>
           <h2 className="font-headline text-4xl font-bold text-[var(--sc-on-surface)] mt-2">Meet the <span className="text-[var(--sc-tertiary)] font-['Playfair_Display'] italic font-semibold">Architects</span></h2>
           <p className="text-[var(--sc-on-surface-variant)] mt-4 max-w-xl mx-auto">The visionaries behind the next generation of collaborative craft.</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {team.map((member) => (
-            <div key={member.name} className="group">
-              <div className="aspect-[4/5] overflow-hidden rounded-[2.5rem] mb-6 border border-[var(--sc-outline-variant)]/10 shadow-sm grayscale hover:grayscale-0 transition-all duration-500">
-                <img
-                  alt={`Portrait of ${member.name}`}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  src={member.img}
+        <div ref={containerRef} className="relative max-w-6xl mx-auto">
+          <div className="relative aspect-[16/9] rounded-2xl overflow-hidden shadow-xl">
+            <img
+              src="/assets/group_photo.jpeg"
+              alt="SmartCollab team"
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ filter: "grayscale(100%) brightness(0.78)" }}
+            />
+
+            {TEAM.map((member, i) => (
+              <img
+                key={i}
+                src={member.img}
+                alt={member.name}
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{
+                  opacity: activeIndex === i ? 1 : 0,
+                  transition: "opacity 0.45s ease",
+                  willChange: "opacity",
+                }}
+              />
+            ))}
+
+            {TEAM.map((member, i) => (
+              <div
+                key={i}
+                className="absolute z-10 cursor-pointer"
+                style={member.zone}
+                onMouseEnter={() => setActiveIndex(i)}
+                onMouseLeave={() => setActiveIndex(null)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setActiveIndex((prev) => (prev === i ? null : i))
+                }}
+              />
+            ))}
+          </div>
+
+          {TEAM.map((member, i) => {
+            const displayedText = useTypingEffect(member.description, activeIndex === i)
+            const isLeft = member.cardPosition === "left"
+            
+            const getPosition = () => {
+              if (isLeft) {
+                return { left: "-2%", top: "12%" }
+              }
+              return { right: "-2%", top: "12%" }
+            }
+
+            return (
+              <div
+                key={i}
+                className="absolute w-80 select-none"
+                style={{
+                  ...getPosition(),
+                  zIndex: 25,
+                  opacity: activeIndex === i ? 1 : 0,
+                  transform: activeIndex === i ? "translateY(0) scale(1)" : "translateY(12px) scale(0.95)",
+                  transition: "opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                  pointerEvents: "none",
+                }}
+              >
+                <div 
+                  className="absolute inset-0 rounded-2xl blur-xl"
+                  style={{ background: member.color, opacity: 0.15 }}
                 />
+                <div
+                  className="relative p-6 rounded-2xl"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)",
+                    backdropFilter: "blur(20px)",
+                    WebkitBackdropFilter: "blur(20px)",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    boxShadow: `0 20px 60px rgba(0,0,0,0.4), 0 0 40px ${member.color}20`,
+                  }}
+                >
+                  <span 
+                    className="text-[10px] font-bold tracking-widest uppercase mb-2 block"
+                    style={{ color: member.color }}
+                  >
+                    {member.role}
+                  </span>
+                  <h4 className="font-bold text-xl text-white mb-3">{member.name}</h4>
+                  
+                  <div className="text-sm text-white/70 leading-relaxed mb-3">
+                    {displayedText}
+                    <span 
+                      className="inline-block w-0.5 h-4 ml-0.5 align-middle animate-pulse"
+                      style={{ background: member.color }}
+                    />
+                  </div>
+                  
+                  <div 
+                    className="h-px w-full my-3 rounded-full"
+                    style={{ background: `linear-gradient(90deg, ${member.color}40, transparent)` }}
+                  />
+                  
+                  <p className="text-xs text-white/50 font-['Playfair_Display'] italic">
+                    "{member.tagline}"
+                  </p>
+                </div>
               </div>
-              <div className="px-4">
-                <h4 className="text-lg font-bold text-[var(--sc-on-surface)]">{member.name}</h4>
-                <p className="text-sm text-[var(--sc-tertiary)] font-medium font-['Playfair_Display'] italic">{member.role}</p>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
+
+        <p className="text-center text-stone-400 text-xs mt-4 font-medium tracking-wide">
+          Hover over each person to discover their role
+        </p>
       </div>
     </section>
   )

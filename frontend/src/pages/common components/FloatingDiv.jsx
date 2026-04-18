@@ -16,6 +16,7 @@ const FloatingDiv = ({
   ToggleButtonComponent,
   content_parent_classes = '',
   button_parent_styles = '',
+  button_parent_styles_tailwind='',
   
   cleanup_method=()=>{}
 
@@ -43,7 +44,7 @@ const FloatingDiv = ({
 
   return (
     <>
-      <div ref={refs.setReference} {...getReferenceProps()} style={button_parent_styles ? { style: button_parent_styles } : {}}>
+      <div ref={refs.setReference} {...getReferenceProps()} style={button_parent_styles ? { style: button_parent_styles } : {}} className={`${button_parent_styles_tailwind}`}>
         {ToggleButtonComponent ? (
           <ToggleButtonComponent />
         ) : (

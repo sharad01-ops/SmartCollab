@@ -43,7 +43,7 @@ const SearchCommunities=({already_joined_communities})=>{
   }, [debouncedQuery]);
 
   return (
-    <div className="w-8 h-8 rounded-lg bg-[#02a1ac] flex items-center justify-center mb-3 flex-shrink-0 select-none"
+    <div className="w-8 h-8 rounded-lg bg-[#02a1ac] flex items-center justify-center flex-shrink-0 select-none"
       >
 
       <FloatingDiv
@@ -55,9 +55,9 @@ const SearchCommunities=({already_joined_communities})=>{
         cleanup_method={Empty_Input}
       >
         {/* Dropdown panel */}
-        <div className="mx-3 my-1 flex flex-col items-center bg-[var(--sc-bg-elevated)] border border-[var(--sc-border)] rounded-lg shadow-sm p-1 min-w-fit">
+        <div className="mx-3 my-1 flex flex-col items-center bg-white border border-[var(--sc-border)] rounded-lg shadow-sm p-1 min-w-fit">
         
-          <input type="text" placeholder=" ...Search Communities" className="mx-1 my-1.5 px-2 py-1 outline-0 bg-[#464646] rounded-[0.4rem]"
+          <input type="text" placeholder=" ...Search Communities" className="mx-1 my-1.5 px-2 py-1 outline-0 bg-[#f9f7f4] rounded-[0.4rem]"
           value={query}
           onChange={(e)=>setQuery(e.target.value)}
           />
@@ -112,7 +112,7 @@ const CreateCommunity=({AddedCommunity, setAddedCommunity})=>{
   const navigate=useNavigate()
   // console.log("hi")
   return (
-    <div className="w-8 h-8 rounded-lg bg-[var(--sc-accent)] flex items-center justify-center mb-3 flex-shrink-0 select-none"
+    <div title="Create Community" className="w-8 h-8 rounded-lg bg-[#f4e6c8] flex items-center justify-center flex-shrink-0 select-none"
       >
 
       <FloatingDiv
@@ -123,16 +123,16 @@ const CreateCommunity=({AddedCommunity, setAddedCommunity})=>{
         button_parent_styles=""
       >
         {/* Dropdown panel */}
-        <div className="mx-3 my-1 flex flex-col items-center bg-[var(--sc-bg-elevated)] border border-[var(--sc-border)] rounded-lg shadow-sm p-1 min-w-fit">
+        <div className="mx-3 my-1 flex flex-col items-center bg-white border border-[var(--sc-border)] rounded-lg shadow-sm p-1 min-w-fit">
         
           <div
             className="flex flex-row"
           >
-            <input ref={InputRef} type="text" placeholder="Community name" className="mx-1 my-1.5 px-2 py-1 outline-0 bg-[#464646] rounded-[0.4rem]"
+            <input ref={InputRef} type="text" placeholder="Community name" className="mx-1 my-1.5 px-2 py-1 outline-0 bg-[#f9f7f4] rounded-[0.4rem]"
             onChange={(e)=>{TextUpdate(e)}}
             />
             <button
-              className={`px-2 py-0.5 mx-1 rounded-lg flex items-center justify-center bg-[var(--sc-bg-tertiary)] transition-colors cursor-pointer
+              className={`px-2 py-0.5 mx-1 rounded-lg flex items-center justify-center bg-[#f4e6c8] transition-colors cursor-pointer close-floating
               ${InputString.length>0?"text-green-400":"text-red-400"}  
               `}
               disabled={InputString.length>0?false:true}
@@ -166,8 +166,9 @@ const GroupBar = ({ username, email }) => {
   const scrollbarRef = useRef(null)
   const [communities, setUserCommunities]=useState(null)
   const [AddedCommunity, setAddedCommunity]=useState(false)
+  const [JoinedCommunity, setJoinedCommunity]=useState(false)
   const { theme, toggleTheme } = useContext(Global_Context)
-  const {LeftCommunity}=useContext(ChatLayout_Context)
+  const {LeftCommunityRender}=useContext(ChatLayout_Context)
 
   useEffect(()=>{
     get_communities().then(
@@ -181,43 +182,85 @@ const GroupBar = ({ username, email }) => {
         })
     
     // console.log("First Mount")
-  },[AddedCommunity, LeftCommunity])
+  },[AddedCommunity, LeftCommunityRender, JoinedCommunity])
 
   return (
     <div className="w-[72px] bg-[#F9F7F4] border-r border-[#E8E4DE] border-opacity-60 flex flex-col items-center py-4 h-full">
 
-      {/* AddCommunity */}
-      <CreateCommunity
-        AddedCommunity={AddedCommunity}
-        setAddedCommunity={setAddedCommunity}
-      />
+    
 
-      {/* Search Communities */}
-      <SearchCommunities
-        already_joined_communities={communities}
-      />
-      {/* Logo */}
-      <div className="mb-6">
-        <svg className="w-8 h-8 fill-[#2F5D50]" viewBox="0 0 24 24">
-          <circle cx="12" cy="6" r="3" />
-          <circle cx="6" cy="12" r="3" />
-          <circle cx="18" cy="12" r="3" />
-          <circle cx="12" cy="18" r="3" />
-        </svg>
-      </div>
+      <FloatingDiv
+        ToggleButtonComponent={() => (
 
-      {/* Community tabs */}
+          <svg className="w-8 h-8 fill-[#2F5D50] mb-5" viewBox="0 0 24 24">
+            <circle cx="12" cy="6" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="12" r="3" />
+            <circle cx="12" cy="18" r="3" />
+          </svg>
+
+        )}
+        content_parent_classes=""
+        button_parent_styles_tailwind=""
+        
+      >
+        {/* Dropdown panel */}
+        <div className="mx-3 my-1 flex flex-col bg-[#fcf9f8] border border-[var(--sc-border)] rounded-lg shadow-sm p-1 min-w-fit">
+        
+          {/* AddCommunity */}
+          <div className="flex flex-row items-center justify-start py-1">
+            <span className="font-[Inter] text-[#2f5d50] ml-1 pr-1 mr-auto">Create Community</span>
+              <CreateCommunity
+                AddedCommunity={AddedCommunity}
+                setAddedCommunity={setAddedCommunity}
+              />
+          </div>
+
+          {/* Search Communities */}
+          <div className="flex flex-row items-center py-1">
+            <span className="font-[Inter] text-[#2f5d50] ml-1 pr-1 mr-auto">Search Communities</span>
+              <SearchCommunities
+                already_joined_communities={communities}
+                setJoinedCommunity={setJoinedCommunity}
+              />
+          </div>
+
+        </div>
+      </FloatingDiv>
+
+
+
+      {/* Community list */}
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col items-center gap-3">
-        <ScrollBar ref={scrollbarRef} className="w-[72px]">
+        <ScrollBar ref={scrollbarRef}>
           {communities && 
           communities.map((community, index) => (
-            <CommunityTab key={index} communityId={community.community_id} communityName={community.community_name} />
+            <CommunityTab
+              key={index}
+              communityId={community.community_id}
+              communityName={community.community_name}
+            />
           ))}
         </ScrollBar>
       </div>
 
+      {/* Divider */}
+      <div className="w-6 h-px bg-[var(--sc-border)] mt-2 mb-2 flex-shrink-0" />
+
+      {/* Theme toggle */}
+      {/* <button
+        onClick={toggleTheme}
+        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+        className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 text-[var(--sc-text-muted)] hover:text-[var(--sc-text-primary)] hover:bg-[var(--sc-bg-tertiary)] transition-colors flex-shrink-0"
+      >
+        {theme === 'dark'
+          ? <Sun className="w-4 h-4" />
+          : <Moon className="w-4 h-4" />
+        }
+      </button> */}
+
       {/* User profile */}
-      <div className="mt-auto flex flex-col items-center pb-2">
+      <div className="flex-shrink-0" title={`${username}\n${email}`}>
         <UserProfile username={username} email={email} />
       </div>
 

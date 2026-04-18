@@ -115,10 +115,10 @@ const ChatMessagesSection = () => {
         queryClient={queryClient}
       />
 
-      <div className="flex-1 bg-[#F5F3EF] overflow-y-auto custom-scrollbar flex flex-col">
+      <div className="flex-1 w-full overflow-y-auto custom-scrollbar flex flex-col">
         <ScrollBar ref={scrollbarRef}>
-          <div className="pt-4 pb-2">
-            <div className="space-y-0.5">
+          <div className=" w-full flex flex-col items-center ">
+            <div className="space-y-0.5 flex flex-col pt-4 pb-2 w-full max-w-[1000px] bg-[#F5F3EF] ">
               {
               data && Array.isArray(data.Messages) &&
 

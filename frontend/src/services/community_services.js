@@ -71,3 +71,18 @@ export async function leave_community(community_id){
             }
         )
 }
+
+export async function join_community(community_id){
+    // await sleep(3000)
+    // console.log("sent request")
+    return await FetchRequest(
+            `/communities/${community_id}/leave`,
+            {
+                method: "DELETE",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            }
+        )
+}

@@ -89,7 +89,7 @@ export async function get_communities(){
 
 export async function LogoutUser(){
     return await FetchRequest(
-        "/users/logout",
+        "/auth/logout",
         {
             method: "GET",
             credentials: "include",

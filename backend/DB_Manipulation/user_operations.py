@@ -6,6 +6,7 @@ from models import User, Access_Token, Community_Member, Community
 from database_models import Users, Access_Tokens, Community_Members, Communities
 from datetime import datetime, timedelta, timezone
 from utilities.colour_print import Print
+from DB_Manipulation.auth_operations import set_access_token
 #returns None if user doesnt exist in db, otherwise returns the user row corresponding to credentials
 def get_user_with_email(session: Session, email: str)->User | None:
     #bascially -
@@ -100,6 +101,8 @@ def add_as_new_user(session: Session, credentials: user_credentials)->User:
     session.execute(
         insert(Users).values(**new_user.model_dump())
     )
+
+    set_access_token(userId=new_uid, userName=credentials.username, session=session)
 
     return new_user
 

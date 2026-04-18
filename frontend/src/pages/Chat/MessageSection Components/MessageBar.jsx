@@ -72,7 +72,7 @@ const TextArea = forwardRef(({ onEnter_callback }, ref) => {
         placeholder="Message..."
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        className="flex-1 bg-transparent outline-none text-sm text-gray-800 placeholder:text-[#8A817C] resize-none"
+        className="flex-1 bg-transparent outline-none text-sm text-gray-800 placeholder:text-[#8A817C] w-full flex resize-none"
       />
     </div>
   )

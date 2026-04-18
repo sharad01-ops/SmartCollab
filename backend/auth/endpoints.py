@@ -1,15 +1,19 @@
-from fastapi import APIRouter, Response, HTTPException, Cookie, status, Depends, Request
+from fastapi import APIRouter, Response, HTTPException, Cookie, status, Depends
 
-from database import session
 from sqlalchemy.orm import Session
+from sqlalchemy import insert, select
 from DB_Manipulation.dependencies import get_db
 from datetime import timedelta, datetime, timezone
 from RequestModels import user_credentials
 
 from DB_Manipulation.user_operations import get_user_with_email, add_as_new_user, update_user_auth_info
+from DB_Manipulation.auth_operations import set_access_token, delete_access_token
 from auth.dependencies import token_verification
 
 from utilities.colour_print import Print
+from utilities.db_utilities import parse_access_token
+
+
 
 router=APIRouter()
 
@@ -57,6 +61,8 @@ def user_login(credentials: user_credentials, response: Response, db:Session = D
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="wrong username or password"
             )
+        else:
+            set_access_token(userId=user.user_id, userName=user.user_name, session=db)
 
 
     response.set_cookie(
@@ -104,3 +110,17 @@ def cors_test(access_token: str=Depends(token_verification)):
 def auto_login_user(refresh_token: str=Depends(refresh_token_check)):
     if refresh_token:
         return {"status": "ok"}
+
+
+@router.get("/logout")
+def logout_user(response: Response, token: str=Depends(token_verification), db:Session = Depends(get_db)):
+    uid=parse_access_token(access_token=token)
+    if uid:
+        response.delete_cookie(
+            key="refresh_token"
+        )
+        delete_access_token(userId=uid, session=db)
+    else:
+        return {"Logout":"Failed"}
+    
+    return {"Logout":"Success"}

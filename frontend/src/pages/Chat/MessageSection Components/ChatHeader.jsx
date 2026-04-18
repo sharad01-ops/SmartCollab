@@ -8,10 +8,10 @@ import { leave_channel } from '../../../services/channel_services'
 const ChatHeader = ({queryClient}) => {
   const navigate = useNavigate()
   const url_params = useParams()
-  const {LeaveChannel_cb}=useContext(ChatLayout_Context)
+  const {setLeftChannel, LeftChannelRender, setLeftChannelRender}=useContext(ChatLayout_Context)
 
   return (
-    <div className="h-12 flex-shrink-0 bg-[var(--sc-bg-elevated)] border-b border-[var(--sc-border)] flex items-center px-4 justify-between">
+    <div className="py-8 h-[2.75rem] flex-shrink-0  flex items-center px-4 justify-between border-b-1 border-[#e8e8e8]">
 
       {/* Left: channel name */}
       <div className="flex items-center gap-2">
@@ -48,10 +48,8 @@ const ChatHeader = ({queryClient}) => {
               navigate(`/chats/${url_params.communityId}/`)
               leave_channel(url_params.communityId, url_params.channelId).then((response)=>{
                 if(response.Success===true){
-                  if(typeof(LeaveChannel_cb)==="function" && LeaveChannel_cb.name==="bound refetch"){
-                    LeaveChannel_cb()
-                    queryClient?.removeQueries({queryKey:["messages", url_params.communityId, url_params.channelId]})
-                  }
+                  setLeftChannel({communityId:url_params.communityId, channelId:url_params.channelId})
+                  setLeftChannelRender(!LeftChannelRender)
                 }
               }).catch((e)=>{
                 console.error(e)

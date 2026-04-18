@@ -10,8 +10,11 @@ export const ChatLayout_Context_Provider = ({children}) => {
     const [CommunityChannels, setCommunityChannels]=useState([])
     const [user_id, setUserid]=useState(null)
     const [user_name, setUserName]=useState(null)
-    const [LeftCommunity, setLeftCommunity]=useState(false)
-    const [LeaveChannel_cb, setLeaveChannel_cb] = useState(null)
+    const [LeftCommunity, setLeftCommunity]=useState(null)
+    const [LeftChannel, setLeftChannel] = useState(null)
+    
+    const [LeftCommunityRender, setLeftCommunityRender]=useState(false)
+    const [LeftChannelRender, setLeftChannelRender] = useState(false)
 
     const {communityId, channelId}=useParams()
     
@@ -24,6 +27,21 @@ export const ChatLayout_Context_Provider = ({children}) => {
 
     }, [communityId, channelId])
 
+    useEffect(()=>{
+        if(LeftChannel?.communityId){
+            setCommunityChannelMap( (prev)=>{
+                const {[LeftChannel?.communityId]:_, ...rest}=prev
+                return rest
+            } )
+        }else if(LeftCommunity){
+            setCommunityChannelMap( (prev)=>{
+                const {[LeftCommunity]:_, ...rest }=prev
+                return rest
+            } )
+        }
+
+    },[LeftChannel, LeftCommunity])
+
     
     return (
         <ChatLayout_Context.Provider value={{
@@ -34,7 +52,9 @@ export const ChatLayout_Context_Provider = ({children}) => {
                                         user_name, setUserName,
                                         setCommunityChannels, CommunityChannels,
                                         LeftCommunity, setLeftCommunity,
-                                        LeaveChannel_cb, setLeaveChannel_cb
+                                        LeftChannel, setLeftChannel,
+                                        LeftCommunityRender, setLeftCommunityRender,
+                                        LeftChannelRender, setLeftChannelRender
                                         }}>
             {children}
         </ChatLayout_Context.Provider>

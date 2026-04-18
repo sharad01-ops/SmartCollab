@@ -38,21 +38,21 @@ const SearchBar = ({joined_Channels}) => {
   }, [debouncedQuery]);
 
   return (
-    <div className="px-2 py-2 bg-[var(--sc-bg-secondary)] border-b border-[var(--sc-border)] flex-shrink-0 relative">
-          
+    <div className="px-4 py-3 bg-white flex-shrink-0 relative">
+      
       <div className="relative flex items-center">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
           type="text"
           placeholder="Find a channel..."
           // onChange={(e) => setChannelFilter(e.target.value)}
-          className="w-full h-7 pl-6 pr-2 rounded-md text-xs bg-[var(--sc-bg-tertiary)] border border-[var(--sc-border)] text-[var(--sc-text-primary)] placeholder:text-[var(--sc-text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--sc-accent)] focus:border-transparent transition-shadow"
+          className="w-full bg-[#F9F7F4] border-none rounded-xl py-3 pl-12 pr-4 text-sm text-gray-900 placeholder:text-[#8A817C]"
           value={query}
           onChange={(e)=>setQuery(e.target.value)}
         />
       </div>
 
-      <div className={` flex flex-col top-10 left-0 right-0 px-1.5 py-1 mx-2 rounded-[0.3rem] bg-[#0f0f10] z-[10] ${debouncedQuery.length===0?" hidden":"absolute"}`}>
+      <div className={` flex flex-col top-15 left-0 right-0 px-1.5 py-1 mx-2 rounded-[0.3rem] bg-white z-[10] border  ${debouncedQuery.length===0?" hidden":"absolute"}`}>
         {joined_Channels &&
           channelList.length>0?(
           channelList.map((value, index)=>{
@@ -64,7 +64,7 @@ const SearchBar = ({joined_Channels}) => {
               }
             }
             return(
-              <div className="flex items-center px-3 py-1 rounded-md text-sm text-[var(--sc-text-primary)] select-none w-full bg-[#212124] my-1 border  border-[var(--sc-border)]"
+              <div className="flex items-center px-3 py-1 rounded-md text-sm text-[#2f5d50] select-none w-full bg-[#f4e6c8] my-1 border  border-[var(--sc-border)]"
               key={index}
               >
                 <span className="mr-auto">{value.channel_name}</span>
@@ -78,7 +78,7 @@ const SearchBar = ({joined_Channels}) => {
               </div>
             )
           })):(
-            <div className="flex items-center px-3 py-1 rounded-md text-sm text-[var(--sc-text-primary)] select-none w-full bg-[#212124] my-1 border  border-[var(--sc-border)]"
+            <div className="flex items-center px-3 py-1 rounded-md text-sm text-[var(--sc-text-primary)] select-none w-full bg-[#f4e6c8] my-1 border  border-[var(--sc-border)]"
               >
                 <span className="mr-auto">No Results</span>
                 

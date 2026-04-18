@@ -3,9 +3,7 @@ from RequestModels import user_credentials
 from auth.dependencies import token_verification
 from DB_Manipulation.user_operations import get_user_communities, get_user_with_uid
 from DB_Manipulation.dependencies import get_db
-from database import session
 from sqlalchemy.orm import Session
-from utilities.colour_print import Print
 
 router = APIRouter()
 
@@ -42,16 +40,3 @@ def user_communities(token: str=Depends(token_verification), db:Session=Depends(
     # print(f'================{user_comms}================')
 
     return {"UserCommunities":user_comms}
-
-
-@router.get("/logout")
-def logout_user(response: Response, token: str=Depends(token_verification)):
-    uid=get_uid(access_token=token)
-    if uid:
-        response.delete_cookie(
-            key="refresh_token"
-        )
-    else:
-        return {"Logout":"Failed"}
-    
-    return {"Logout":"Success"}

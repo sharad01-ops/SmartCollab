@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { get_community_channels } from "../../../services/community_services"
 import ScrollBar from "../../common components/ScrollBar"
 import { useEffect, useRef, useContext, useState } from "react"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown,Search } from "lucide-react"
 import { ChatLayout_Context } from "../../../contexts/ChatLayout-context-provider"
 import SearchBar from "./SearchBar"
 import FloatingDiv from "../../common components/FloatingDiv"
@@ -12,19 +12,21 @@ import { leave_community } from "../../../services/community_services"
 import { create_channel } from "../../../services/channel_services"
 import CenterFloatingDiv from "../../common components/CenterFloatingDiv"
 
-const OptionsBar = ({CommunityName, CommunityId, setLeftCommunity, LeftCommunity, queryClient, refetchChannels}) => {
+const OptionsBar = ({CommunityName, CommunityId, queryClient, refetchChannels}) => {
   const navigate=useNavigate()
   const [centerdivmounted, setCenterDivMounted] = useState(null)
   const [channel_name, setChannelName]=useState('')
+  const { setLeftCommunity, setLeftCommunityRender, LeftCommunityRender } = useContext(ChatLayout_Context)
+  
   const ChannelNameInputUpdate=(e)=>{
     setChannelName(e.target.value)
   }
 
   return (
-    <div className="h-11 flex-shrink-0 bg-[var(--sc-bg-secondary)] border-b border-[var(--sc-border)] flex items-center justify-between px-3">
-      <span className="text-[var(--sc-text-primary)] font-semibold text-sm truncate">
+    <div className="h-[2.75rem] flex-shrink-0 bg-white flex items-center justify-between px-4 py-8 border-b-1 border-[#e8e8e8] select-none">
+      <p className="text-lg font-semibold text-gray-900">
         {CommunityName}
-      </span>
+      </p>
       {
         centerdivmounted && 
         <CenterFloatingDiv 
@@ -60,30 +62,31 @@ const OptionsBar = ({CommunityName, CommunityId, setLeftCommunity, LeftCommunity
       { CommunityId &&
       <FloatingDiv
         ToggleButtonComponent={() => (
-          <ChevronDown className="w-4 h-4 text-[var(--sc-text-muted)] flex-shrink-0 cursor-pointer hover:text-[var(--sc-text-secondary)] transition-colors" />
+          <ChevronDown className="w-4 h-4 text-[var(--sc-text-muted)] flex-shrink-0 cursor-pointer hover:text-[var(--sc-text-secondary)] transition-colors flex" />
         )}
         content_parent_classes=""
-        button_parent_styles=""
+        button_parent_styles_tailwind="flex! justify-center! items-center! h-full bg-green-500"
         
       >
         {/* Dropdown panel */}
-        <div className="mx-3 my-1 flex flex-col items-center bg-[var(--sc-bg-elevated)] border border-[var(--sc-border)] rounded-lg shadow-sm p-1 min-w-fit">
+        <div className="mx-3 my-1 flex flex-col items-center bg-[#fcf9f8] border border-[var(--sc-border)] rounded-lg shadow-sm p-1 min-w-fit">
         
           <button
-            className="px-3 py-2 hover:bg-[#212124] rounded-[0.5rem] text-[Inter] text-[0.8rem] w-full text-start mx-2 my-1 cursor-pointer close-floating"
+            className="px-3 py-2 hover:bg-[#f4e6c8] rounded-[0.5rem] text-[Inter] text-[0.8rem] w-full text-start text-[#2f5d50] mx-2 my-1 cursor-pointer close-floating"
             onClick={()=>{
               setCenterDivMounted(true)
             }}
           >Create Channel</button>
 
           <button
-            className="px-3 py-2 hover:bg-[#212124] rounded-[0.5rem] text-[Inter] text-[0.8rem] w-full text-start mx-2 my-1 cursor-pointer text-[#ff0000] close-floating"
+            className="px-3 py-2 hover:bg-[#fabcac] rounded-[0.5rem] text-[Inter] text-[0.8rem] w-full text-start mx-2 my-1 cursor-pointer text-[#ff0000] close-floating"
             onClick={async ()=>{
               await navigate("/chats")
               if(CommunityId){
                 leave_community(CommunityId).then( (response)=>{
                   if(response.Success===true){
-                    setLeftCommunity(!LeftCommunity)
+                    setLeftCommunity(CommunityId)
+                    setLeftCommunityRender(!LeftCommunityRender)
                     queryClient.removeQueries({queryKey: ["community_channels", CommunityId]})
                     queryClient.removeQueries({queryKey: ["messages", CommunityId]})
                   }
@@ -108,7 +111,7 @@ const ChannelsPanel = () => {
   const {communityId, channelId} = useParams()
   const scrollbarRef=useRef(null)
 
-  const { setCommunityChannels, setLeftCommunity, LeftCommunity, setLeaveChannel_cb } = useContext(ChatLayout_Context)
+  const { setCommunityChannels, LeftChannel, LeftChannelRender } = useContext(ChatLayout_Context)
 
   const queryClient=useQueryClient()
 
@@ -126,11 +129,12 @@ const ChannelsPanel = () => {
     setCommunityChannels(data.Channels)
   },[data])
 
-  useEffect(()=>{
-    console.log("Registered Refetch")
-    setLeaveChannel_cb(function(){return refetch})
-  },[communityId, channelId])
 
+  useEffect(()=>{
+    if(!LeftChannel?.communityId || !LeftChannel?.channelId) return
+    queryClient?.removeQueries({queryKey:["messages", LeftChannel.communityId, LeftChannel.channelId]})
+    refetch()
+  },[LeftChannel, LeftChannelRender])
 
 
   if(isError){
@@ -161,58 +165,44 @@ const ChannelsPanel = () => {
   }
 
   return (
-  <div className="flex flex-col w-[200px] h-full border-r border-[var(--sc-border)]">
+  <div className="flex flex-col w-[280px] h-full">
     
-    <OptionsBar CommunityName={data?.CommunityName||"Community"} CommunityId={communityId} 
-    setLeftCommunity={setLeftCommunity}
-    LeftCommunity={LeftCommunity}
+    <OptionsBar 
+    CommunityName={data?.CommunityName||"Community"} 
+    CommunityId={communityId} 
     queryClient={queryClient}
     refetchChannels={refetch}
     />
 
     <SearchBar joined_Channels={data?.Channels}/>
 
-    <div className="bg-[var(--sc-bg-secondary)] w-full h-full flex flex-col overflow-hidden">
+    <div className="bg-white w-full h-full flex flex-col overflow-hidden pt-1 px-4">
 
-      <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--sc-text-muted)] flex-shrink-0">
+      <p className="text-lg font-semibold text-gray-900 mb-4">
         Channels
       </p>
 
-    <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col">
+      <div className="flex-1 overflow-y-auto flex flex-col">
+        {/* Channel list */}
+        <div className="flex-1 overflow-hidden">
+          <ScrollBar ref={scrollbarRef}>
+            {
+              data && Array.isArray(data.Channels) && 
+                (
+                  data.Channels.map((channel) => (
+                    <ChannelTag
+                      key={channel.channel_id}
+                      channel_name={channel.channel_name}
+                      channel_id={channel.channel_id}
+                    />
+                  ))
+                )
+            }
+          </ScrollBar>
+        </div>
 
-      {/* Search bar */}
-      <div className="relative mb-4">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search channels..."
-          className="w-full bg-[#F9F7F4] border-none rounded-xl py-3 pl-12 pr-4 text-sm text-gray-900 placeholder:text-[#8A817C]"
-        />
       </div>
-
-      {/* Community heading */}
-      <p className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Community</p>
-
-      {/* Channel list */}
-      <div className="flex-1 overflow-hidden">
-        <ScrollBar ref={scrollbarRef}>
-          {
-            data && Array.isArray(data.Channels) && 
-              (
-                data.Channels.map((channel) => (
-                  <ChannelTag
-                    key={channel.channel_id}
-                    channel_name={channel.channel_name}
-                    channel_id={channel.channel_id}
-                  />
-                ))
-              )
-          }
-        </ScrollBar>
-      </div>
-
     </div>
-  </div>
   </div>
   )
 }

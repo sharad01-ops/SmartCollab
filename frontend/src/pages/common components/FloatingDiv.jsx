@@ -9,13 +9,16 @@ import {
   shift,
   autoUpdate,
 } from '@floating-ui/react'
-import { useState } from 'react'
+import { use, useEffect, useState } from 'react'
 
 const FloatingDiv = ({
   children,
   ToggleButtonComponent,
   content_parent_classes = '',
   button_parent_styles = '',
+  
+  cleanup_method=()=>{}
+
 }) => {
   const [open, setOpen] = useState(false)
 
@@ -31,6 +34,12 @@ const FloatingDiv = ({
   const dismiss = useDismiss(context)
 
   const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss])
+
+  useEffect(()=>{
+    if(typeof(cleanup_method)==="function" && open===false){
+      cleanup_method()
+    }
+  },[open])
 
   return (
     <>
@@ -53,6 +62,12 @@ const FloatingDiv = ({
             style={floatingStyles}
             {...getFloatingProps()}
             className={`z-50 ${content_parent_classes}`}
+            onClick={(e)=>{
+              const target=e.target
+              if (target.closest(".close-floating")) {
+                setOpen(false);
+              }
+            }}
           >
             {children}
           </div>

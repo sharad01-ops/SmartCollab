@@ -192,8 +192,8 @@ const ChannelsPanel = () => {
           )
         }
 
-      </div>
     </div>
+  </div>
   </div>
   )
 }

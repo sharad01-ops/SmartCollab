@@ -1,19 +1,19 @@
 import { Search } from 'lucide-react'
 import { useContext, useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ChatLayout_Context } from "../../../contexts/ChatLayout-context-provider"
-import { search_channels } from '../../../services/channel_services'
+import { search_channels, join_channel } from '../../../services/channel_services'
 
-const SearchBar = ({joined_Channels}) => {
+const SearchBar = ({joined_Channels, refetchChannels}) => {
   const { CommunityChannels } = useContext(ChatLayout_Context)
   const {communityId}=useParams()
   const [query, setQuery] = useState("");
-
+  const navigate=useNavigate()
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [channelList, setChannelList]=useState([])
   const Empty_Input=()=>{
-    setQuery("")
     setChannelList([])
+    setQuery("")
   }
 
   useEffect(() => {
@@ -52,10 +52,11 @@ const SearchBar = ({joined_Channels}) => {
         />
       </div>
 
-      <div className={` flex flex-col top-15 left-0 right-0 px-1.5 py-1 mx-2 rounded-[0.3rem] bg-white z-[10] border  ${debouncedQuery.length===0?" hidden":"absolute"}`}>
+      <div className={` flex flex-col top-15 left-0 right-0 px-1.5 py-1 mx-2 rounded-[0.3rem] bg-white z-[10] border  ${query.length===0?" hidden":"absolute"}`}>
         {joined_Channels &&
-          channelList.length>0?(
+          channelList.length>0 ?(
           channelList.map((value, index)=>{
+            console.log(value)
             let joined_channel=false
             for(const joined_chann of joined_Channels){
               if(joined_chann.channel_id===value.channel_id){
@@ -70,7 +71,19 @@ const SearchBar = ({joined_Channels}) => {
                 <span className="mr-auto">{value.channel_name}</span>
                 {!joined_channel && 
                   (
-                    <div className="w-fit bg-blue-400 px-1.5 py-1 rounded-[0.5rem]">
+                    <div className="w-fit bg-blue-400 px-1.5 py-1 rounded-[0.5rem]"
+                    onClick={()=>{
+                      Empty_Input()
+                      join_channel(value.community_id, value.channel_id).then((response)=>{
+                        if(response.Success===true){
+                          navigate(`/chats/${value.community_id}/${value.channel_id}`)
+                          refetchChannels()
+                        }
+                      }).catch((err)=>{
+                        console.log(err)
+                      })
+                    }}
+                    >
                       Join
                     </div>
                   )

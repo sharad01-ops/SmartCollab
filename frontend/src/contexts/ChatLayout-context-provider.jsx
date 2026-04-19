@@ -1,5 +1,6 @@
-import {useState, createContext, useEffect} from 'react'
+import {useState, createContext, useEffect, useContext} from 'react'
 import { useParams } from 'react-router-dom'
+import { Global_Context } from './Global-context-provider'
 
 export const ChatLayout_Context=createContext(null)
 
@@ -17,6 +18,8 @@ export const ChatLayout_Context_Provider = ({children}) => {
     const [LeftChannelRender, setLeftChannelRender] = useState(false)
 
     const {communityId, channelId}=useParams()
+
+    const {LoggedOut}=useContext(Global_Context)
     
     useEffect(()=>{ 
 
@@ -41,6 +44,12 @@ export const ChatLayout_Context_Provider = ({children}) => {
         }
 
     },[LeftChannel, LeftCommunity])
+
+    useEffect(()=>{
+        if(LoggedOut===true){
+            setCommunityChannelMap({})
+        }
+    },[LoggedOut])
 
     
     return (

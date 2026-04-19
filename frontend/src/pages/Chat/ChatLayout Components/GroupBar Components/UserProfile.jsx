@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogoutUser } from '../../../../services/user_services'
 import { Languages, LogOut } from 'lucide-react'
 import FloatingDiv from '../../../common components/FloatingDiv'
+import { Global_Context } from '../../../../contexts/Global-context-provider'
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -19,10 +20,14 @@ const UserProfile = ({ username, email }) => {
   const [language, setLanguage] = useState('en')
   const [showLangConfirm, setShowLangConfirm] = useState(false)
   const [pendingLang, setPendingLang] = useState(null)
+  const { setLoggedOut } = useContext(Global_Context)
 
   const handleLogout = () => {
     LogoutUser()
-      .then(() => navigate('/'))
+      .then(() =>{
+        navigate('/')
+        window.location.reload();
+      })
       .catch(() => navigate('/'))
   }
 

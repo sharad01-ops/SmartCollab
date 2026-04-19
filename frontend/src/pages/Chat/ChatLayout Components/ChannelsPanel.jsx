@@ -145,25 +145,6 @@ const ChannelsPanel = () => {
   }
 
 
-  //isLoading && communityId
-  if(isLoading && communityId){
-    return(
-      <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col">
-        <div className="relative mb-4">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search channels..."
-            className="w-full bg-[#F9F7F4] border-none rounded-xl py-3 pl-12 pr-4 text-sm text-gray-900 placeholder:text-[#8A817C]"
-            disabled
-          />
-        </div>
-        <p className="text-lg font-semibold text-gray-900 mb-4">Community</p>
-        <p className="text-[#8A817C] text-sm">Loading...</p>
-      </div>
-    )
-  }
-
   return (
   <div className="flex flex-col w-[280px] h-full">
     
@@ -174,7 +155,7 @@ const ChannelsPanel = () => {
     refetchChannels={refetch}
     />
 
-    <SearchBar joined_Channels={data?.Channels}/>
+    <SearchBar joined_Channels={data?.Channels} refetchChannels={refetch}/>
 
     <div className="bg-white w-full h-full flex flex-col overflow-hidden pt-1 px-4">
 
@@ -184,22 +165,32 @@ const ChannelsPanel = () => {
 
       <div className="flex-1 overflow-y-auto flex flex-col">
         {/* Channel list */}
-        <div className="flex-1 overflow-hidden">
-          <ScrollBar ref={scrollbarRef}>
-            {
-              data && Array.isArray(data.Channels) && 
-                (
-                  data.Channels.map((channel) => (
-                    <ChannelTag
-                      key={channel.channel_id}
-                      channel_name={channel.channel_name}
-                      channel_id={channel.channel_id}
-                    />
-                  ))
-                )
-            }
-          </ScrollBar>
-        </div>
+        {
+          (isLoading && communityId)?
+          (
+            <div className="flex-1 overflow-hidden">
+              ...Loading Channels
+            </div>
+          ):
+          (
+            <div className="flex-1 overflow-hidden">
+              <ScrollBar ref={scrollbarRef}>
+                {
+                  data && Array.isArray(data.Channels) && 
+                    (
+                      data.Channels.map((channel) => (
+                        <ChannelTag
+                          key={channel.channel_id}
+                          channel_name={channel.channel_name}
+                          channel_id={channel.channel_id}
+                        />
+                      ))
+                    )
+                }
+              </ScrollBar>
+            </div>
+          )
+        }
 
       </div>
     </div>

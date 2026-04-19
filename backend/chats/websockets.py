@@ -5,6 +5,7 @@ import json
 from chats.WSClient import WSClient
 import core
 import sys
+from datetime import datetime, timezone
 
 
 router=APIRouter()
@@ -130,18 +131,21 @@ def get_int_from_str(string:str)->int|None:
     except Exception as e:
         return None
 
-def get_message_correct_format(data: dict, uid:str)->dict|None:
+def get_message_correct_format(data: dict, uid:str,user_name:str)->dict|None:
     uid_int=get_int_from_str(string=uid)
     commid_int=get_int_from_str(string=data["communityId"])
     chanlid_int=get_int_from_str(string=data["channelId"])
     if None in (uid_int, commid_int, chanlid_int):
         return None
+
     message_correct_format={
                         "type":"TempMessage",
                         "sender_id":uid_int,
+                        "sender_name":user_name,
                         "community_id":commid_int,
                         "channel_id":chanlid_int,
                         "message":data["message"],
+                        "sent_at":datetime.now(timezone.utc).isoformat()
                     }
     return message_correct_format
 
@@ -159,9 +163,9 @@ async def receiver(ws: WebSocket):
                 await manager.store_in_room(websocket=ws, community_id=data["communityId"], channel_id=data["channelId"])
             
             if message_type=="message":
-                new_message=get_message_correct_format(data=data, uid=ws.state.user_id)
+                new_message=get_message_correct_format(data=data, uid=ws.state.user_id, user_name=ws.state.user_name)
                 if new_message is not None:
-                    Print.green(f"from UserId {ws.state.user_id}: {data}")
+                    Print.green(f"from UserId {ws.state.user_id}: {new_message}")
                     # redis_api.publish_to_stream("chat_messages", data["message"])
                     await core.async_redis_api.redis_client.xadd("chat_messages", new_message)
                     await core.async_redis_api.redis_client.xadd("chat_broadcast", new_message)
@@ -182,8 +186,10 @@ async def websocket_test(websocket: WebSocket):
         return
 
     uid=refresh_token.partition("_")[0]
+    userName=refresh_token.partition("_")[2].partition("_")[0]
     Print.magenta(f"Cookie Found for UserId: {uid}")
     websocket.state.user_id=uid
+    websocket.state.user_name=userName
 
     ws_client=WSClient(websocket=websocket)
     await manager.connect(websocket=websocket, wsClient=ws_client)

@@ -9,13 +9,14 @@ import FloatingDiv from "../../common components/FloatingDiv"
 import { create_community } from "../../../services/community_services"
 import { useNavigate } from "react-router-dom"
 import {get_communities} from "../../../services/user_services"
-import { search_communities } from "../../../services/community_services"
+import { search_communities, join_community } from "../../../services/community_services"
 
-const SearchCommunities=({already_joined_communities})=>{
+const SearchCommunities=({already_joined_communities, JoinedCommunity, setJoinedCommunity})=>{
   
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [communityList, setCommunityList]=useState([])
+  const navigate=useNavigate()
   const Empty_Input=()=>{
     setQuery("")
     setCommunityList([])
@@ -78,7 +79,18 @@ const SearchCommunities=({already_joined_communities})=>{
                   <span className="mr-auto">{value.community_name}</span>
                   {!joined_community?
                     (
-                      <div className="w-fit bg-blue-400 px-1.5 py-1 rounded-[0.5rem]">
+                      <div className="w-fit bg-blue-400 px-1.5 py-1 rounded-[0.5rem] cursor-pointer close-floating"
+                      onClick={()=>{
+                        join_community(value.community_id).then((response)=>{
+                          if(response.Success===true){
+                            navigate(`/chats/${response.NewCommId}`)
+                            setJoinedCommunity(!JoinedCommunity)
+                          }
+                        }).catch((error)=>{
+                          console.error(error)
+                        })
+                      }}
+                      >
                         Join
                       </div>
                     ):(
@@ -221,6 +233,7 @@ const GroupBar = ({ username, email }) => {
             <span className="font-[Inter] text-[#2f5d50] ml-1 pr-1 mr-auto">Search Communities</span>
               <SearchCommunities
                 already_joined_communities={communities}
+                JoinedCommunity={JoinedCommunity}
                 setJoinedCommunity={setJoinedCommunity}
               />
           </div>

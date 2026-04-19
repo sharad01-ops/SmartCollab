@@ -65,3 +65,18 @@ export async function leave_channel(communityId, channelId) {
             }
         )
 }
+
+
+export async function join_channel(communityId, channelId) {
+
+    return await FetchRequest(
+            `/channels/${communityId}/${channelId}/join`,
+            {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            }
+        )
+}

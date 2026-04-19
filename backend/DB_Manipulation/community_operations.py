@@ -104,3 +104,9 @@ def Delete_Community(comm_id:int, session:Session):
     session.execute(query)
 
     return {"Success":True}
+
+def get_Community(comm_id:int, session:Session)->Community:
+    query=select(Communities).where( Communities.community_id==comm_id)
+    result=session.execute(query).scalar()
+    community=Community(community_id=result.community_id, community_name=result.community_name, created_at=result.created_at)
+    return community

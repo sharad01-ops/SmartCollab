@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select, exists, delete, insert, func
 from models import MessageRead, Channel, User, Channel_Member
-from database_models import Messages, Channel_Members, Channels, Communities
+from database_models import Messages, Channel_Members, Channels, Communities, Users
 from utilities.colour_print import Print
 from datetime import datetime, timezone
 import core
@@ -62,16 +62,33 @@ def get_channel_messages(uid:int, comm_id:int, channel_id:int, session:Session)-
 
     channel_messages: list[MessageRead]=session.execute(query).scalars().all()
     
+    user_map:dict[int,Users]={}
+
     for msg in channel_messages:
+        user=user_map.get(msg.sender_id)
+        if(user==None):
+            query=select(Users).where(
+                        Users.user_id==msg.sender_id
+                    )
+            result=session.execute(query).scalar()
+            if(result is not None):
+                user_map[result.user_id]=result
+                user=result
+        
+        if(user is not None):
+            msg.__dict__["sender_name"]=user.user_name
+        else:
+            msg.__dict__["sender_name"]="User"
+
         if msg.sender_id==uid:
-          msg.__dict__.update({"sender_id":"user"})
+            msg.__dict__.update({"sender_id":"user"})
 
 
     return channel_messages
 
 def get_Channle_Members(community_id:int, channel_id:int, session:Session)->list[Channel_Member]:
     query=select(Channel_Members).where(Channel_Members.community_id==community_id, Channel_Members.channel_id==channel_id)
-    result:list[Channel_Members]=session.execute(query).scalars().all()
+    result:list[Channel_Member]=session.execute(query).scalars().all()
 
     return result
 
@@ -211,6 +228,12 @@ def get_SingleMemberChannels(comm_id:int, session: Session):
     
     return result
 
+
+def get_channel(comm_id:int, channel_id:int, session: Session)->Channel:
+    query=select(Channels).where(Channels.community_id==comm_id, Channels.channel_id==channel_id)
+    result=session.execute(query).scalar()
+    channel=Channel(channel_id=result.channel_id, community_id=result.community_id, channel_name=result.channel_name, created_at=result.created_at)
+    return channel
 
 
 def remove_RedisLists(channel_list:list[int], community_id:int):

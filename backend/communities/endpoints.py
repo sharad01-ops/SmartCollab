@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from utilities.db_utilities import parse_access_token
 from DB_Manipulation.dependencies import get_db
-from DB_Manipulation.community_operations import get_user_channels, create_community, Add_Community_Member, getComunityMembers, Delete_Community, Remove_Community_Member, Remove_All_CommunityMessages, Remove_All_Community_Channels
+from DB_Manipulation.community_operations import get_user_channels, create_community, Add_Community_Member, getComunityMembers, Delete_Community, Remove_Community_Member, Remove_All_CommunityMessages, Remove_All_Community_Channels, get_Community
 from DB_Manipulation.channel_operations import Remove_User_From_Every_Channel
 from DB_Manipulation.user_operations import get_user_with_uid
 from communities.dependencies import isUserAuthorized
@@ -47,7 +47,7 @@ def get_User_Channels(communityId:int, access_token: str=Depends(token_verificat
 
 
 @router.post("/create")
-def get_User_Channels(communityInfo:community_info_create, access_token: str=Depends(token_verification), db:Session=Depends(get_db)):
+def get_CreateCommunity(communityInfo:community_info_create, access_token: str=Depends(token_verification), db:Session=Depends(get_db)):
     uid=parse_access_token(access_token=access_token)
     user=get_user_with_uid(session=db, uid=uid)
     newCommunity=None
@@ -61,6 +61,23 @@ def get_User_Channels(communityInfo:community_info_create, access_token: str=Dep
         Print.red(f'Error while creating community: {e}')
 
     return {"Success":True if newCommunity is not None else False, "NewCommId":newCommunity.community_id, "NewCommName":newCommunity.community_name }
+
+
+
+@router.post("/{communityId}/join")
+def get_JoinCommunity(communityId:int, access_token: str=Depends(token_verification), db:Session=Depends(get_db)):
+    uid=parse_access_token(access_token=access_token)
+    user=get_user_with_uid(session=db, uid=uid)
+    community_to_join=None
+    newCommunityMember=None
+    try:
+        community_to_join=get_Community(comm_id=communityId, session=db)
+        newCommunityMember=Add_Community_Member(community=community_to_join, user=user, role="member", session=db)
+        Print.green(f'Added {newCommunityMember.user_name} to Community {newCommunityMember.community_name}')
+    except Exception as e:
+        Print.red(f'Error while joining community: {e}')
+
+    return {"Success":True if community_to_join is not None else False, "NewCommId":community_to_join.community_id, "NewCommName":community_to_join.community_name }
 
 
 

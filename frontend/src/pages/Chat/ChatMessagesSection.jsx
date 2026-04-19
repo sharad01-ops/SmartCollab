@@ -29,7 +29,7 @@ const ChatMessagesSection = () => {
   })
 
 
-  const update_message_list=({type, sender_id, community_id, channel_id, message})=>{
+  const update_message_list=({type, sender_id, sender_name, community_id, channel_id, message, sent_at})=>{
     // console.log("on recieve:",type, sender_id, typeof(community_id), typeof(channel_id), message)
     if(!type || !sender_id || !community_id || !channel_id || !message) return
     
@@ -44,7 +44,7 @@ const ChatMessagesSection = () => {
         console.log(user_id)
         return {
           ...old,
-          Messages: [...prev, {type, sender_id:sender_id==user_id?"user":sender_id, community_id, channel_id, message} ],
+          Messages: [...prev, {type, sender_id:sender_id==user_id?"user":sender_id, sender_name, community_id, channel_id, sent_at, message} ],
         }
       }
     )
@@ -92,6 +92,8 @@ const ChatMessagesSection = () => {
     console.log("message Sent: ", value)
   }
 
+  let prev_sent_date=" "
+  let date_change=false
 
   if(isError){
     throw error
@@ -122,15 +124,41 @@ const ChatMessagesSection = () => {
               {
               data && Array.isArray(data.Messages) &&
 
-              data.Messages.map((msg, i) => (
-                  <TextBox
-                    key={msg.message_id ?? i}
-                    fromUser={msg.sender_id == "user"}
-                    message={msg.message}
-                    sender_id={msg.sender_id}
-                    sent_at={msg.sent_at}
-                  />
-                ))
+              data.Messages.map((msg, i) => {
+                    const CurrentSentDate=new Date(msg.sent_at).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      })
+                    if(prev_sent_date && CurrentSentDate!=prev_sent_date && CurrentSentDate!="Invalid Date"){
+                      date_change=true
+                      prev_sent_date=CurrentSentDate
+                    }else{
+                      date_change=false
+                    }
+                    return (
+                      <div key={i}>
+                        {
+                          date_change && prev_sent_date &&
+                          <div className="text-[#2F5D50] py-8 w-full flex justify-center">
+                            <div className="bg-white px-3 py-1 rounded-xl">
+                              {
+                                prev_sent_date
+                              }
+                            </div>
+                          </div>
+                        }
+                        <TextBox
+                          fromUser={msg.sender_id == "user"}
+                          message={msg.message}
+                          sender_id={msg.sender_id}
+                          sender_name={msg.sender_name}
+                          sent_at={msg.sent_at}
+                        />
+                      </div>
+                    )
+                  }
+                )
               }
             </div>
           </div>

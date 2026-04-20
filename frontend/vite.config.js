@@ -26,6 +26,11 @@ export default defineConfig(({mode})=>{
             changeOrigin: true,
             rewrite: (path) => path.replace(/^\/backend/, '')
           },
+          '/translation':{
+            target: env.VITE_TRANSLATION_API_PROXY_URL,
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/translation/, '')
+          },
           '/ws':{
             target: env.VITE_CHATS_WEBSOCKET_PROXY_URL,
             changeOrigin: true,

@@ -4,11 +4,14 @@ import MessageBar from "./MessageSection Components/MessageBar"
 import { useParams } from "react-router-dom"
 import { useContext, useEffect, useRef, useState } from "react"
 import { ChatLayout_Context } from "../../contexts/ChatLayout-context-provider"
+import { Global_Context } from "../../contexts/Global-context-provider"
 import { get_channel_messages } from "../../services/channel_services"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import ScrollBar from "../common components/ScrollBar"
 import { WebsocketsContext } from "../../contexts/WebSockets-context-provider"
 import { wsClient } from "../../api/websocket"
+
+
 
 const ChatMessagesSection = () => {
   const {communityId, channelId}=useParams()
@@ -16,6 +19,7 @@ const ChatMessagesSection = () => {
   const scrollbarRef=useRef(null)
 
   const {setCommunityChannelMap, user_id}=useContext(ChatLayout_Context)
+  const {UserData}=useContext(Global_Context)
 
   const wesocket=useContext(WebsocketsContext)
   const queryClient=useQueryClient()
@@ -23,7 +27,7 @@ const ChatMessagesSection = () => {
 
   const {data, isLoading, isError, error}=useQuery({
     queryKey: ["messages", communityId, channelId],
-    queryFn: ()=>{return get_channel_messages(communityId, channelId)},
+    queryFn: ()=>{return get_channel_messages(communityId, channelId, UserData?.preferred_language)},
     enabled: !!channelId && !!communityId,
     staleTime: 1000*60*1
   })
@@ -41,10 +45,10 @@ const ChatMessagesSection = () => {
       ["messages", String(community_id), String(channel_id)],
       (old) => {
         const prev = old?.Messages ?? []
-        console.log(user_id)
+        
         return {
           ...old,
-          Messages: [...prev, {type, sender_id:sender_id==user_id?"user":sender_id, sender_name, community_id, channel_id, sent_at, message} ],
+          Messages: [...prev, {type, sender_id:sender_id==user_id?"user":sender_id, sender_name, community_id, channel_id, sent_at, message, is_new_message:true} ],
         }
       }
     )
@@ -75,6 +79,7 @@ const ChatMessagesSection = () => {
   },[communityId, channelId])
 
   useEffect(()=>{
+
     if(scrollbarRef.current){ 
       scrollbarRef.current.scrollToBottom()
     }
@@ -154,6 +159,7 @@ const ChatMessagesSection = () => {
                           sender_id={msg.sender_id}
                           sender_name={msg.sender_name}
                           sent_at={msg.sent_at}
+                          is_new_message={msg.is_new_message}
                         />
                       </div>
                     )

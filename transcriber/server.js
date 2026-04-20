@@ -4,7 +4,6 @@ const {SFUConnectionHandler}=require('./SFUConnectionHandler')
 require("dotenv").config()
 const dgram=require('dgram')
 const UserPipeline=require("./Pipeline")
-const fs=fs
 const PORT=process.env.PORT
 const SFU_URL=process.env.SFU_URL
 

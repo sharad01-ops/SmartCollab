@@ -3,20 +3,19 @@ import { Outlet, useParams, useNavigate } from "react-router-dom"
 import {EmptyChatSection} from "./EmptyChatSection";
 
 import GroupBar from "./ChatLayout Components/GroupBar";
-import OptionsBar from "./ChatLayout Components/OptionsBar";
-import SearchBar from "./ChatLayout Components/SearchBar";
 import ChannelsPanel from "./ChatLayout Components/ChannelsPanel";
 
 import { useAsyncError } from "../../hooks/ErrorHooks";
 
 import { useUserInfo } from "../../hooks/user_hooks";
 import { ChatLayout_Context } from "../../contexts/ChatLayout-context-provider";
-
+import { Global_Context } from "../../contexts/Global-context-provider";
 
 const ChatLayout = () => {
     const {getUserProfile}=useUserInfo()
 
     const {user_id, setUserid, user_name, setUserName}=useContext(ChatLayout_Context)
+    const {setUserData}=useContext(Global_Context)
     const throwError=useAsyncError()
 
     const {communityId, channelId}=useParams();
@@ -32,6 +31,7 @@ const ChatLayout = () => {
             console.log("user profile: ",userInfo.username)
             setUserProfile(user_profile.UserInfo)
             if(user_profile.UserInfo){
+                setUserData(user_profile.UserInfo)
                 setUserid(user_profile.UserInfo.user_id)
                 setUserName(user_profile.UserInfo.username)
             }

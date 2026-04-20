@@ -26,9 +26,9 @@ def get_user_with_email(session: Session, email: str)->User | None:
 
 
 #same as get_user_with_credentials, but uses the user_id to retrieve user info
-def get_user_with_uid(session: Session, uid: int)->User | None:
+def get_user_with_uid(session: Session, uid: int)->Users | None:
 
-    user: list[User]=session.execute(
+    user: list[Users]=session.execute(
                                 select(Users).where(
                                         Users.user_id==uid
                                         )
@@ -131,4 +131,7 @@ def get_user_communities(session: Session, uid:int)->list[Community] | None:
     return user_comms
 
 
+def update_language_preference(new_language:str, uid:int, session:Session):
+    query=update(Users).where(Users.user_id==uid).values(preferred_language=new_language)
+    session.execute(query)
 

@@ -5,6 +5,7 @@ export const Global_Context = createContext(null)
 const Global_ContextProvider = ({ children }) => {
 
   const [LoggedOut, setLoggedOut] = useState(false)
+  const [UserData, setUserData]=useState(null)
 
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -31,7 +32,8 @@ const Global_ContextProvider = ({ children }) => {
   return (
     <Global_Context.Provider value={{ 
                                     toggle_darkMode, theme, toggleTheme,
-                                    LoggedOut, setLoggedOut
+                                    LoggedOut, setLoggedOut,
+                                    UserData, setUserData
                                     }}>
       {children}
     </Global_Context.Provider>

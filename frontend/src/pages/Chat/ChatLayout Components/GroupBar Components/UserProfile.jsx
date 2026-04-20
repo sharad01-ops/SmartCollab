@@ -4,23 +4,44 @@ import { LogoutUser } from '../../../../services/user_services'
 import { Languages, LogOut } from 'lucide-react'
 import FloatingDiv from '../../../common components/FloatingDiv'
 import { Global_Context } from '../../../../contexts/Global-context-provider'
+import { change_preferred_language } from '../../../../services/user_services'
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
-  { code: 'es', label: 'Español' },
-  { code: 'fr', label: 'Français' },
-  { code: 'de', label: 'Deutsch' },
-  { code: 'hi', label: 'हिन्दी' },
-  { code: 'zh', label: '中文' },
-  { code: 'ja', label: '日本語' },
+  {code: 'as', label: "Assamese"},
+  {code: 'bn', label: "Bengali"},
+  {code: 'doi', label: "Dogri"},
+  {code: 'gu', label: "Gujarati"},
+  {code: 'hi', label: "Hindi"},
+  {code: 'kn', label: "Kannada"},
+  {code: 'gom', label: "Konkani"},
+  {code: 'mai', label: "Maithili"},
+  {code: 'ml', label: "Malayalam"},
+  {code: 'mni-Mtei', label: "Meiteilon (Manipuri)"},
+  {code: 'mr', label: "Marathi"},
+  {code: 'ne', label: "Nepali"},
+  {code: 'or', label: "Odia (Oriya)"},
+  {code: 'sa', label: "Sanskrit"},
+  {code: 'sat-Latn', label: "Santali (Latin)"},
+  {code: 'sd', label: "Sindhi"},
+  {code: 'ta', label: "Tamil"},
+  {code: 'te', label: "Telugu"},
+  {code: 'ur', label: "Urdu"},
+  { code: 'es', label: 'Spanish' },
+  { code: 'fr', label: 'French' },
+  { code: 'nl', label: 'Dutch' },
+  { code: 'ja', label: 'Japanese' },
 ]
+
+
 
 const UserProfile = ({ username, email }) => {
   const navigate = useNavigate()
-  const [language, setLanguage] = useState('en')
+  const { setLoggedOut, UserData, setUserData } = useContext(Global_Context)
+  const [language, setLanguage] = useState(UserData?.preferred_language || "en")
   const [showLangConfirm, setShowLangConfirm] = useState(false)
   const [pendingLang, setPendingLang] = useState(null)
-  const { setLoggedOut } = useContext(Global_Context)
+  
 
   const handleLogout = () => {
     LogoutUser()
@@ -38,9 +59,21 @@ const UserProfile = ({ username, email }) => {
   }
 
   const confirmLanguageChange = () => {
-    setLanguage(pendingLang)
-    setShowLangConfirm(false)
-    setPendingLang(null)
+
+    change_preferred_language(pendingLang).then((response)=>{
+      console.log("Changed Language")
+      if(response.Success===true){
+        setLanguage(pendingLang)
+        setShowLangConfirm(false)
+        setPendingLang(null)
+        window.location.reload()
+      }
+    }).catch((error)=>{
+      console.error(error)
+      setShowLangConfirm(false)
+      setPendingLang(null)
+    })
+  
   }
 
   return (

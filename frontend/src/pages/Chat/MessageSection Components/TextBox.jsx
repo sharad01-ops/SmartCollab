@@ -1,4 +1,13 @@
-const TextBox = ({ fromUser = null, message = null, sender_id = null,sender_name=null, sent_at = null }) => {
+import { useContext, useEffect, useState } from "react"
+import { translate } from "../../../services/translation_service"
+import { Loader2 } from "lucide-react"
+import { Global_Context } from "../../../contexts/Global-context-provider"
+
+const TextBox = ({ fromUser = null, message = null, sender_id = null,sender_name=null, sent_at = null, is_new_message=null }) => {
+
+  const [rendered_message, setMessage]=useState(message)
+  const [translation_loading, setTranslationLoading]=useState(false)
+  const {UserData}=useContext(Global_Context)
 
   const formatTime = (ts) => {
     if (!ts) return ''
@@ -25,6 +34,29 @@ const TextBox = ({ fromUser = null, message = null, sender_id = null,sender_name
     // console.log( date, time)
   }
 
+  // translate(message, "hi").then((result)=>{
+  //   setMessage(result.translated)
+  // }).catch((e)=>{
+  //   console.error(e)
+  // })
+  useEffect(()=>{
+
+    if(is_new_message===true){
+      setTranslationLoading(true)
+
+      translate(message, UserData?.preferred_language || "en").then((result)=>{
+        setMessage(result.translated)
+      }).catch((e)=>{
+        console.error(e)
+      }).finally(()=>{
+        setTranslationLoading(false)
+      })
+
+    }
+
+  }, [is_new_message])
+  
+
 
   return (
     message && (
@@ -32,7 +64,18 @@ const TextBox = ({ fromUser = null, message = null, sender_id = null,sender_name
         {fromUser ? (
           <div className="flex justify-end w-full">
             <div className="bg-[#F4E6C8] text-[#2F5D50] px-4 py-2 rounded-2xl rounded-br-none max-w-[70%] shadow-sm">
-              {message}
+              {
+                translation_loading===true?(
+                  <div className="flex flex-row items-center">
+                  <Loader2 className=" animate-spin size-3 m-1"/>
+                  {rendered_message}
+                  </div>
+                ):(
+                <>
+                  {rendered_message}
+                </>
+                )
+              }
               <div className="font-[Inter] pt-1 text-[0.6rem] w-full flex justify-end">
                 {sent_time}
               </div>
@@ -45,7 +88,18 @@ const TextBox = ({ fromUser = null, message = null, sender_id = null,sender_name
                 {sender_name}
               </div>
 
-              {message}
+              {
+                translation_loading===true?(
+                  <div className="flex flex-row items-center">
+                  <Loader2 className=" animate-spin size-3 m-1"/>
+                  {rendered_message}
+                  </div>
+                ):(
+                <>
+                  {rendered_message}
+                </>
+                )
+              }
               <div className="font-[Inter] pt-2 text-[0.6rem] w-full flex justify-start">
                 {sent_time}
               </div>

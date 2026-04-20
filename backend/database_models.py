@@ -19,6 +19,7 @@ class Users(Base):
     user_name= Column(String, nullable=False)
     user_email= Column(String, unique=True)
     user_password= Column(String, nullable=False)
+    preferred_language=Column(String, nullable=False, default="en")
     created_at=Column(DateTime(timezone=True))
 
 

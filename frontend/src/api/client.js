@@ -1,6 +1,6 @@
 import { ApiError } from "./ApiError"
 
-const BASE_URL=import.meta.env.VITE_API_BASE_URL
+
 
 
 async function throw_api_error(response){
@@ -42,7 +42,7 @@ function sleep(ms) {
 }
 
 
-async function NullAccessTokenCheck(endpoint) {
+async function NullAccessTokenCheck(BASE_URL, endpoint) {
 
     if(endpoint=="/auth/login"){
         return
@@ -50,7 +50,7 @@ async function NullAccessTokenCheck(endpoint) {
 
     if(!access_token){
         try{
-            const refresh_result=await SendRefreshRequest()
+            const refresh_result=await SendRefreshRequest(BASE_URL)
             access_token=refresh_result.new_AccessToken
         }catch(e){
             access_token=null
@@ -65,7 +65,7 @@ async function NullAccessTokenCheck(endpoint) {
     }
 }
 
-async function SendRefreshRequest(){
+async function SendRefreshRequest(BASE_URL){
 
     if(!refreshPromise){
         refreshPromise=(async ()=>{
@@ -100,6 +100,7 @@ async function SendRefreshRequest(){
 
 
 export async function SendFetchRequest(
+    BASE_URL,
     endpoint,
     options,
 ) {
@@ -128,6 +129,7 @@ let refreshPromise=null
 
 
 export async function FetchRequest(
+    BASE_URL,
     endpoint,
     options,
 ) {
@@ -136,11 +138,11 @@ export async function FetchRequest(
         await refreshPromise
     }
 
-    await NullAccessTokenCheck(endpoint)
+    await NullAccessTokenCheck(BASE_URL, endpoint)
 
     try{
 
-        const result=await SendFetchRequest(endpoint, options)
+        const result=await SendFetchRequest(BASE_URL, endpoint, options)
         return result
     }catch(e){
         if(e.status==401){
@@ -152,10 +154,10 @@ export async function FetchRequest(
 
             try{
                 
-                const refresh_result=await SendRefreshRequest()
+                const refresh_result=await SendRefreshRequest(BASE_URL)
                 access_token=refresh_result.new_AccessToken
 
-                const retry_result=await SendFetchRequest(endpoint, options)
+                const retry_result=await SendFetchRequest(BASE_URL, endpoint, options)
                 return retry_result
 
             }catch(e){

@@ -5,10 +5,6 @@ const BASE_URL=import.meta.env.VITE_TRANSLATION_API_BASE
 
 export async function translate(text_string, target) {
 
-    if(target==="en"){
-        return {translated: text_string}
-    }
-
     return await FetchRequest(
             BASE_URL, `/translate`,
             {
@@ -29,22 +25,18 @@ export async function MessageArray_translate(messages_Array, target) {
         return null
     }
 
-    if(target==="en"){
-        return messages_Array
-    }
+    const translatedMessages = await Promise.all(messages_Array.map(async (obj) => {
+        try {
+            const res = await translate(obj.message, target);
+            return {
+                ...obj,
+                message: res.translated
+            };
+        } catch (e) {
+            console.error("Single message translation error:", e);
+            return obj;
+        }
+    }));
 
-    const Combined_MessagesString=messages_Array.map(obj => obj.message).join(" <<>> ")
-    
-    const translated_str=await translate(Combined_MessagesString, target)
-
-    const translated_arr=translated_str.translated.split(" <<>> ")
-
-
-    const TranslatedArr=messages_Array.map((obj, indx)=>{
-        obj.message=translated_arr[indx]
-
-        return obj
-    })
-
-    return TranslatedArr
+    return translatedMessages;
 }

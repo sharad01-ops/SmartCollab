@@ -51,28 +51,64 @@ const ChatLayout = () => {
 
   if (!UserProfile ) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#F5F3EF]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[#2F5D50]/20 border-t-[#2F5D50] rounded-full animate-spin" />
-          <span className="text-[#8A817C] text-sm">Loading workspace...</span>
+      <div className="h-screen w-full p-4 flex items-center bg-[#152e24]">
+        {/* Sidebar Container */}
+        <div 
+          className="w-[68px] h-full flex flex-col flex-shrink-0 z-20 items-center py-4 rounded-[28px] border border-[rgba(255,255,255,0.1)]"
+          style={{
+            background: 'linear-gradient(180deg, #1F4D3A 0%, #153C2E 100%)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 12px 30px rgba(0,0,0,0.25)'
+          }}
+        >
+          <GroupBar username={UserProfile?.username || ""} email={UserProfile?.email || ""} />
+        </div>
+        
+        {/* Partition Space */}
+        <div className="w-4 h-full flex-shrink-0 bg-transparent" />
+        
+        <div className="flex-1 h-full rounded-[32px] overflow-hidden bg-[#f8f8f8] shadow-[inset_0_4px_24px_rgba(0,0,0,0.02)] flex flex-row">
+          <div className="w-[320px] h-full flex-shrink-0 bg-[#f5f6f5] border-r border-gray-100">
+            <ChannelsPanel />
+          </div>
+          <div className="flex-1 h-full bg-[#F8F8F8] flex flex-col">
+            {channelId ? <Outlet /> : <EmptyChatSection />}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="h-screen w-full bg-[var(--sc-bg-primary)] flex flex-row overflow-hidden font-[Inter] text-[var(--sc-text-primary)]">
-      <div className="h-full flex flex-row flex-shrink-0">
+    <div className="h-screen w-full p-4 flex items-center bg-[#152e24]">
+      {/* Sidebar Container */}
+      <div 
+        className="w-[68px] h-full flex flex-col flex-shrink-0 z-20 items-center py-4 rounded-[28px] border border-[rgba(255,255,255,0.1)] transition-all"
+        style={{
+          background: 'linear-gradient(180deg, #1F4D3A 0%, #153C2E 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 12px 30px rgba(0,0,0,0.25)'
+        }}
+      >
         <GroupBar
           username={UserProfile.username}
           email={UserProfile.email}
         />
-        <ChannelsPanel />
       </div>
       
-      {/* Chat Area */}
-      <div className="flex-1 bg-[#F5F3EF] flex flex-col">
-        {channelId ? <Outlet /> : <EmptyChatSection />}
+      {/* Partition Space */}
+      <div className="w-4 h-full flex-shrink-0 bg-transparent" />
+      
+      {/* Main Workspace Card */}
+      <div className="flex-1 h-full rounded-[32px] overflow-hidden bg-[#f8f8f8] shadow-[inset_0_4px_24px_rgba(0,0,0,0.02),0_10px_30px_rgba(0,0,0,0.2)] flex flex-row font-[Inter] text-[var(--sc-text-primary)]">
+        
+        {/* Channels Panel - Subdued light grey */}
+        <div className="w-[300px] h-full flex-shrink-0 bg-[#f5f6f5] border-r border-gray-100">
+          <ChannelsPanel />
+        </div>
+        
+        {/* Chat Area - Focused light background */}
+        <div className="flex-1 h-full bg-[#F8F8F8] flex flex-col relative">
+          {channelId ? <Outlet /> : <EmptyChatSection />}
+        </div>
       </div>
     </div>
   )

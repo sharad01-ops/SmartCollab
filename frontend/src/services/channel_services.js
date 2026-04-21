@@ -8,7 +8,7 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export async function get_channel_messages(communityId, channelId, preferred_language) {
+export async function get_channel_messages(communityId, channelId) {
 
     const data= await FetchRequest(
             BASE_URL, `/channels/${communityId}/${channelId}`,
@@ -20,15 +20,6 @@ export async function get_channel_messages(communityId, channelId, preferred_lan
                 }
             }
         )
-    if(data?.Messages){
-        try{
-            const translated_mesages=await MessageArray_translate(data.Messages, preferred_language || "en")
-            data.Messages=translated_mesages
-            // console.log(translated_mesages)
-        }catch(e){
-            console.error(e)
-        }
-    }
     
     return data
     

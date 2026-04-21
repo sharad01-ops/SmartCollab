@@ -4,12 +4,13 @@ import MessageBar from "./MessageSection Components/MessageBar"
 import { useParams } from "react-router-dom"
 import { useContext, useEffect, useRef, useState } from "react"
 import { ChatLayout_Context } from "../../contexts/ChatLayout-context-provider"
-import { Global_Context } from "../../contexts/Global-context-provider"
 import { get_channel_messages } from "../../services/channel_services"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import ScrollBar from "../common components/ScrollBar"
 import { WebsocketsContext } from "../../contexts/WebSockets-context-provider"
 import { wsClient } from "../../api/websocket"
+import useAppStore from "../../store/useAppStore"
+import { MessageArray_translate } from "../../services/translation_service"
 
 
 
@@ -19,22 +20,77 @@ const ChatMessagesSection = () => {
   const scrollbarRef=useRef(null)
 
   const {setCommunityChannelMap, user_id}=useContext(ChatLayout_Context)
-  const {UserData}=useContext(Global_Context)
 
   const wesocket=useContext(WebsocketsContext)
   const queryClient=useQueryClient()
-  const [scroll, doScroll]=useState(false)
+  const [showScrollDown, setShowScrollDown] = useState(false)
+  
+  const language = useAppStore((state) => state.language)
+  const [translatedMessages, setTranslatedMessages] = useState([])
+  const translationCache = useRef({})
 
-  const {data, isLoading, isError, error}=useQuery({
+  console.log("Current user language (Zustand):", language)
+
+  const {data, isLoading, isError, error, refetch}=useQuery({
     queryKey: ["messages", communityId, channelId],
-    queryFn: ()=>{return get_channel_messages(communityId, channelId, UserData?.preferred_language)},
+    queryFn: ()=>{return get_channel_messages(communityId, channelId)},
     enabled: !!channelId && !!communityId,
     staleTime: 1000*60*1
   })
 
+  // Force re-translate when language changes
+  useEffect(() => {
+    console.log("Language changed - Clearing cache and re-translating")
+    translationCache.current = {}
+  }, [language])
+
+  useEffect(() => {
+    const messages = data?.Messages
+    if (!messages || messages.length === 0) {
+      setTranslatedMessages([])
+      return
+    }
+
+    async function handleTranslation() {
+      // Find messages that are NOT in the cache
+      const uncachedMessages = messages.filter(msg => !translationCache.current[`${msg.message}::${language}`])
+
+      if (uncachedMessages.length === 0) {
+        // All messages are in cache, just update the state
+        const cachedResults = messages.map(msg => ({
+          ...msg,
+          message: translationCache.current[`${msg.message}::${language}`]
+        }))
+        setTranslatedMessages(cachedResults)
+        return
+      }
+
+      try {
+        const result = await MessageArray_translate(uncachedMessages, language)
+        
+        // Update cache with new results
+        result.forEach((res, index) => {
+          translationCache.current[`${uncachedMessages[index].message}::${language}`] = res.message
+        })
+
+        // Construct final translated list using the cache
+        const finalMessages = messages.map(msg => ({
+          ...msg,
+          message: translationCache.current[`${msg.message}::${language}`] || msg.message
+        }))
+
+        setTranslatedMessages(finalMessages)
+      } catch (err) {
+        console.error("Translation error:", err)
+        setTranslatedMessages(messages)
+      }
+    }
+
+    handleTranslation()
+  }, [data?.Messages, language])
+
 
   const update_message_list=({type, sender_id, sender_name, community_id, channel_id, message, sent_at})=>{
-    // console.log("on recieve:",type, sender_id, typeof(community_id), typeof(channel_id), message)
     if(!type || !sender_id || !community_id || !channel_id || !message) return
     
     const state = queryClient.getQueryState(["messages", String(community_id), String(channel_id)])
@@ -82,8 +138,23 @@ const ChatMessagesSection = () => {
 
     if(scrollbarRef.current){ 
       scrollbarRef.current.scrollToBottom()
+      setShowScrollDown(false)
     }
-  },[data])
+  }, [translatedMessages])
+
+  const handleScroll = (e) => {
+    const el = e.target
+    if (!el) return
+    const isNotBottom = el.scrollHeight - el.scrollTop - el.clientHeight > 150
+    setShowScrollDown(isNotBottom)
+  }
+
+  const handleScrollToBottom = () => {
+    if(scrollbarRef.current){ 
+      scrollbarRef.current.scrollToBottom()
+      setShowScrollDown(false)
+    }
+  }
 
 
 
@@ -117,19 +188,19 @@ const ChatMessagesSection = () => {
   }
 
   return (
-    <div className="bg-[var(--sc-bg-primary)] w-full h-full flex flex-col">
-      <ChatHeader 
-        queryClient={queryClient}
-      />
+    <div className="bg-transparent w-full h-full flex flex-col items-center">
+      <div className="w-full flex-shrink-0">
+        <ChatHeader 
+          queryClient={queryClient}
+        />
+      </div>
 
-      <div className="flex-1 w-full overflow-y-auto custom-scrollbar flex flex-col">
-        <ScrollBar ref={scrollbarRef}>
-          <div className=" w-full flex flex-col items-center ">
-            <div className="space-y-0.5 flex flex-col pt-4 pb-2 w-full max-w-[1000px] bg-[#F5F3EF] ">
+      <div className="flex-1 w-full overflow-y-auto custom-scrollbar flex flex-col pt-4 relative">
+        <ScrollBar ref={scrollbarRef} onScroll={handleScroll}>
+          <div className="w-full flex flex-col items-center justify-center min-h-full">
+            <div className="space-y-0 flex flex-col py-6 px-8 w-full bg-transparent">
               {
-              data && Array.isArray(data.Messages) &&
-
-              data.Messages.map((msg, i) => {
+              translatedMessages.map((msg, i) => {
                     const CurrentSentDate=new Date(msg.sent_at).toLocaleDateString('en-IN', {
                         day: '2-digit',
                         month: 'short',
@@ -145,8 +216,8 @@ const ChatMessagesSection = () => {
                       <div key={i}>
                         {
                           date_change && prev_sent_date &&
-                          <div className="text-[#2F5D50] py-8 w-full flex justify-center">
-                            <div className="bg-white px-3 py-1 rounded-xl">
+                          <div className="text-[var(--sc-on-surface-muted)] py-4 w-full flex justify-center text-xs font-medium">
+                            <div className="bg-white/50 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20">
                               {
                                 prev_sent_date
                               }
@@ -169,9 +240,21 @@ const ChatMessagesSection = () => {
             </div>
           </div>
         </ScrollBar>
+
+
+        {showScrollDown && (
+          <div 
+            onClick={handleScrollToBottom}
+            className="absolute bottom-[20px] right-[40px] w-[44px] h-[44px] rounded-full flex items-center justify-center bg-[rgba(31,77,58,0.8)] backdrop-blur-[10px] text-white text-[18px] shadow-[0_8px_20px_rgba(0,0,0,0.2)] cursor-pointer transition-all hover:scale-105 z-10"
+          >
+            ↓
+          </div>
+        )}
       </div>
 
-      <MessageBar onEnter_callback={sendMessage} />
+      <div className="w-full flex-shrink-0 bg-transparent relative z-10 before:absolute before:inset-x-0 before:-top-16 before:h-16 before:bg-gradient-to-t before:from-[var(--sc-surface-low)] before:to-transparent before:-z-10 pt-2">
+        <MessageBar onEnter_callback={sendMessage} />
+      </div>
     </div>
   )
 }

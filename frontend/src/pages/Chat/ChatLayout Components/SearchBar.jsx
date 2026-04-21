@@ -11,6 +11,7 @@ const SearchBar = ({joined_Channels, refetchChannels}) => {
   const navigate=useNavigate()
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [channelList, setChannelList]=useState([])
+  
   const Empty_Input=()=>{
     setChannelList([])
     setQuery("")
@@ -38,7 +39,7 @@ const SearchBar = ({joined_Channels, refetchChannels}) => {
   }, [debouncedQuery]);
 
   return (
-    <div className="px-4 py-3 bg-white flex-shrink-0 relative">
+    <div className="px-6 py-4 bg-transparent flex-shrink-0 relative">
       
       <div className="relative flex items-center">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -46,7 +47,7 @@ const SearchBar = ({joined_Channels, refetchChannels}) => {
           type="text"
           placeholder="Find a channel..."
           // onChange={(e) => setChannelFilter(e.target.value)}
-          className="w-full bg-[#F9F7F4] border-none rounded-xl py-3 pl-12 pr-4 text-sm text-gray-900 placeholder:text-[#8A817C]"
+          className="w-full bg-white shadow-sm border border-black/[0.05] rounded-[14px] py-2.5 pl-10 pr-4 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#f1ead7]"
           value={query}
           onChange={(e)=>setQuery(e.target.value)}
         />
@@ -106,3 +107,5 @@ const SearchBar = ({joined_Channels, refetchChannels}) => {
 }
 
 export default SearchBar
+
+

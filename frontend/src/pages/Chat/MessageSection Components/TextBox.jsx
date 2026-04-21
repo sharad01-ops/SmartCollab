@@ -1,13 +1,4 @@
-import { useContext, useEffect, useState } from "react"
-import { translate } from "../../../services/translation_service"
-import { Loader2 } from "lucide-react"
-import { Global_Context } from "../../../contexts/Global-context-provider"
-
 const TextBox = ({ fromUser = null, message = null, sender_id = null,sender_name=null, sent_at = null, is_new_message=null }) => {
-
-  const [rendered_message, setMessage]=useState(message)
-  const [translation_loading, setTranslationLoading]=useState(false)
-  const {UserData}=useContext(Global_Context)
 
   const formatTime = (ts) => {
     if (!ts) return ''
@@ -31,78 +22,31 @@ const TextBox = ({ fromUser = null, message = null, sender_id = null,sender_name
       minute: '2-digit'
     });
     sent_time=time
-    // console.log( date, time)
   }
-
-  // translate(message, "hi").then((result)=>{
-  //   setMessage(result.translated)
-  // }).catch((e)=>{
-  //   console.error(e)
-  // })
-  useEffect(()=>{
-
-    if(is_new_message===true){
-      setTranslationLoading(true)
-
-      translate(message, UserData?.preferred_language || "en").then((result)=>{
-        setMessage(result.translated)
-      }).catch((e)=>{
-        console.error(e)
-      }).finally(()=>{
-        setTranslationLoading(false)
-      })
-
-    }
-
-  }, [is_new_message])
-  
-
 
   return (
     message && (
-      <div className="w-full flex px-4 py-0.5">
+      <div className={`w-full flex ${fromUser ? 'justify-end' : 'justify-start'} px-2 py-1`}>
         {fromUser ? (
-          <div className="flex justify-end w-full">
-            <div className="bg-[#F4E6C8] text-[#2F5D50] px-4 py-2 rounded-2xl rounded-br-none max-w-[70%] shadow-sm">
-              {
-                translation_loading===true?(
-                  <div className="flex flex-row items-center">
-                  <Loader2 className=" animate-spin size-3 m-1"/>
-                  {rendered_message}
-                  </div>
-                ):(
-                <>
-                  {rendered_message}
-                </>
-                )
-              }
-              <div className="font-[Inter] pt-1 text-[0.6rem] w-full flex justify-end">
-                {sent_time}
+          <div className="flex flex-col items-end w-full">
+            <div className="flex items-center justify-end w-full">
+              <div className="bg-[#173C2F] text-white px-3.5 py-2.5 rounded-[16px] rounded-tr-[4px] max-w-[420px] shadow-[0_2px_8px_rgba(0,0,0,0.06)] text-[15px] leading-relaxed">
+                {message}
               </div>
+            </div>
+            <div className="mt-1 px-1 text-[10px] text-gray-400 font-medium select-none">
+              {sent_time}
             </div>
           </div>
         ) : (
-          <div className="flex justify-start w-full">
-            <div className="bg-[#2F5D50] text-white px-4 py-2 rounded-2xl rounded-bl-none max-w-[70%] shadow-sm">
-              <div className="text-[0.7rem] pb-1">
-                {sender_name}
+          <div className="flex flex-col items-start w-full">
+            <div className="flex items-center justify-start w-full">
+              <div className="bg-[#f0f2f1] text-gray-800 px-3.5 py-2.5 rounded-[16px] rounded-tl-[4px] max-w-[420px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[15px] leading-relaxed">
+                {message}
               </div>
-
-              {
-                translation_loading===true?(
-                  <div className="flex flex-row items-center">
-                  <Loader2 className=" animate-spin size-3 m-1"/>
-                  {rendered_message}
-                  </div>
-                ):(
-                <>
-                  {rendered_message}
-                </>
-                )
-              }
-              <div className="font-[Inter] pt-2 text-[0.6rem] w-full flex justify-start">
-                {sent_time}
-              </div>
+            </div>
+            <div className="mt-1 px-1 text-[10px] text-gray-400 font-medium select-none">
+              {sent_time}
             </div>
           </div>
         )}

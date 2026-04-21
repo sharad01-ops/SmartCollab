@@ -57,6 +57,14 @@
   /* Chat UI specific */
   --sc-chat-accent:        #436556;
   --sc-chat-bubble-dark:   #2e3131;
+
+  /* Aliases for compatibility */
+  --sc-bg-primary:         var(--sc-surface);
+  --sc-bg-secondary:       var(--sc-surface-low);
+  --sc-bg-tertiary:       var(--sc-surface-container);
+  --sc-border:            var(--sc-outline-variant);
+  --sc-text-primary:      var(--sc-on-surface);
+  --sc-text-muted:        var(--sc-on-surface-muted);
 }
 
 /* ─── Reset ──────────────────────────────────────────────────── */

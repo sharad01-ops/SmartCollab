@@ -1,4 +1,3 @@
-######################################################################################################
 import httpx
 import re
 import json
@@ -7,9 +6,10 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-# CRITICAL: Use 'generate' endpoint for Sarvam-1 Base model
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "sarvam-mixsummarizer" # Ensure this matches your Modelfile name
+# Configuration
+OLLAMA_URL = "http://localhost:11434/api/chat"
+# This MUST match your 'ollama list' exactly
+MODEL_NAME = "llama3.1:8b-instruct-q4_K_M" 
 
 NOISE_PATTERNS = [
     r"\(speaks in foreign language\)",
@@ -30,7 +30,6 @@ def is_useless(text: str) -> bool:
 
 def extract_messages(data: dict) -> list:
     messages = []
-    # Matching your transcript.json structure
     for segment in data.get("segments", []):
         cleaned = clean_text(segment.get("text", ""))
         if not cleaned or is_useless(cleaned):
@@ -44,48 +43,49 @@ def extract_messages(data: dict) -> list:
 def format_conversation(messages: list) -> str:
     return "\n".join(f"[user{m['user']}] {m['message']}" for m in messages)
 
-
-
-
-
-
 async def get_summary(data: dict) -> str:
     messages = extract_messages(data)
-    if not messages: return "No content."
+    if not messages: 
+        return "Not enough content to generate a summary."
 
     conversation = format_conversation(messages)
 
-    # We use a very primitive pattern that base models understand better
-    prompt = (
-    f"Transcript:\n{conversation}\n\n"
-    "Summary: [user2] and [user7] discussed the project report. "
-    "Because of a delay in data analysis, they agreed to"
-)
-
-
+    # Use the Chat API for Llama-3.1 Instruct
     payload = {
-        "model": MODEL_NAME,
-        "prompt": prompt,
+        "model": MODEL_NAME, 
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "You are a professional meeting assistant. Summarize the transcript into paragraphs, more than 1 paragraph if the transcript is long . "
+                    "Always use English for the summary, even if the transcript contains Hindi or Marathi. "
+                    "Use exact User IDs like [user1] and [user2]. Focus only ncluding exon facts provided in the text."
+                )
+            },
+            {
+                "role": "user",
+                "content": f"Summarize this conversation:\n\n{conversation}"
+            }
+        ],
         "stream": False,
         "options": {
-            "temperature": 0.0,
-            "repeat_penalty": 1.5,
-            "num_predict": 60, # Increased for full sentences
-            "stop": ["\n", "उपयोगकर्ता", "[", "]", "/", "###", "(", "\""] 
+            "temperature": 0.1  # Low temperature ensures factual accuracy
+            #"num_thread": 4 
         }
     }
 
-
-    async with httpx.AsyncClient(timeout=120) as client:
-        resp = await client.post(OLLAMA_URL, json=payload)
-        result = resp.json()
-        
-        # We manually stitch the anchor back to the response
-        generated_text = result.get("response", "").strip()
-        return f"The users discussed {generated_text}"
-
-
-        
+    async with httpx.AsyncClient(timeout=180) as client:
+        try:
+            resp = await client.post(OLLAMA_URL, json=payload)
+            resp.raise_for_status()
+            result = resp.json()
+            
+            # Extract content from the chat message structure
+            return result.get("message", {}).get("content", "").strip()
+        except httpx.HTTPStatusError as e:
+            return f"Ollama Error: {e.response.status_code} - Make sure model '{MODEL_NAME}' is loaded."
+        except Exception as e:
+            return f"Connection Error: {str(e)}"
 
 @app.post("/summarize")
 async def summarize(request: TranscriptRequest):
@@ -104,4 +104,5 @@ async def health():
 
 if __name__ == "__main__":
     import uvicorn
+    # Start the server on port 8001
     uvicorn.run(app, host="0.0.0.0", port=8001)

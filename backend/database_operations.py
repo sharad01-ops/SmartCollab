@@ -3,7 +3,9 @@ from database import engine
 from sqlalchemy import inspect, text
 from sqlalchemy.schema import DropTable
 from sqlalchemy.orm import close_all_sessions, Session
-
+from dotenv import load_dotenv
+import os
+load_dotenv()
 #takes model from database_models.py
 def create_table_from_model(model, table_name: str):
     metadata = MetaData()
@@ -62,7 +64,7 @@ def add_data_into_table_by_reference(table_reference: Table, data):
 def drop_all_tables():
     inspector=inspect(engine)
     sorted_tables = inspector.get_sorted_table_and_fkc_names()
-    metadata = MetaData()
+    metadata = MetaData(schema=os.getenv("POSTGRESDB_SCHEMA"))
     print("dropping all tables")
     with engine.begin() as conn:
         for tname, fkcs in reversed(sorted_tables):

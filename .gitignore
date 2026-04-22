@@ -3,12 +3,16 @@
 __pycache__
 \.env
 secrets
+info.txt
 
 #tranbscriber
 transcriber/whisper/models/*
 !transcriber/whisper/models/.gitkeep
 
 transcriber/whisper/whisper.exe
+transcriber/whisper/whisper
+transcriber/storage/transcripts/*
+transcriber/PipelineTest/Output/*
 
 
 transcriber/PipelineTest/Output/*

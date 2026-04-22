@@ -35,3 +35,6 @@ class channel_info_join(BaseModel):
 class channel_info_leave(BaseModel):
     channel_id: int
     channel_name: str
+
+class user_search(BaseModel):
+    user_name:str

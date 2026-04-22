@@ -33,7 +33,10 @@ class WebSocketAPI{
 
     disconnect(){
         this.socket?.close()
-        this.socket=null
+        socket=null
+        url=null
+        listeners=new Map()
+        run_on_start=new Map()
     }
 
 

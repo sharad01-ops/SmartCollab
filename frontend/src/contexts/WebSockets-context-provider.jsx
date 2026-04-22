@@ -18,24 +18,23 @@ export const WebSockets_ContextProvider = ({children}) => {
         if(!communityId || !channelId) {
             return
         }
+
+        if(wsClient && !wsClient.socket) {   
+            return
+        }
+
+        wsClient.send({type:"Room", communityId, channelId })
+        // return ()=>wsClient.disconnect()
+    }, [communityId, channelId])
+
+    useEffect(()=>{
         if(wsClient && !wsClient.socket) {
-
-            const onConnect=()=>{
-                wsClient.send({type:"Room", communityId, channelId })
-            }
-
-            wsClient.subscribe_initializer( `${communityId}${channelId}`,onConnect)
 
             wsClient.connect(`${BASE_URL}/ws/socket_test`)
             
             return
         }
-        
-        
-        wsClient.send({type:"Room", communityId, channelId })
-
-        // return ()=>wsClient.disconnect()
-    }, [communityId, channelId])
+    },[])
 
 
 

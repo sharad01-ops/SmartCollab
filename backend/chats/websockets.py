@@ -83,13 +83,14 @@ async def Broadcaster():
 
 class ConnectionManager:
     def __init__(self):
-        broadcaster_task=asyncio.create_task(Broadcaster())
-        asyncio.gather(broadcaster_task)
-
+        self.broadcaster_task=None
         self.active_connections: dict[str, WSClient]={}
         self.Rooms: dict[str, list[str]]={}
         self.connection_Rooms: dict[str, list[str]]={}
 
+    async def start(self):
+        self.broadcaster_task=asyncio.create_task(Broadcaster())
+        asyncio.gather(self.broadcaster_task)
 
     async def connect(self, websocket: WebSocket, wsClient: WSClient):
         await websocket.accept()

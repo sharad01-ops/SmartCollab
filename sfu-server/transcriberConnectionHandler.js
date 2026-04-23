@@ -16,6 +16,8 @@ class TranscriberConnectionHandler{
     socket=null
     PlainTransport=null
 
+    ready=false
+
     connect=async (socket)=>{
         this.socket=socket
         this.socket.join("TranscriberRoom")
@@ -37,6 +39,7 @@ class TranscriberConnectionHandler{
             ip:process.env.TRANSCRIBER_IP,
             port:Number(process.env.TRANSCRIBER_LISTEN_PORT)
         })
+        this.ready=true
     }
 
     toggleConsumer=async (producerId, isOn)=>{

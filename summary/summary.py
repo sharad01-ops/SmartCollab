@@ -105,4 +105,4 @@ async def health():
 if __name__ == "__main__":
     import uvicorn
     # Start the server on port 8001
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run("summary:app", host="0.0.0.0", port=8001, reload=True)

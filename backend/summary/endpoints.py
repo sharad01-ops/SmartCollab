@@ -1,7 +1,9 @@
 import httpx
 import json
 import os
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from auth.dependencies import token_verification
+from utilities.db_utilities import parse_access_token
 
 router = APIRouter()
 
@@ -10,7 +12,9 @@ TRANSCRIPTS_PATH = os.path.join(BASE_DIR, "transcriber", "storage", "transcripts
 LLM_SERVICE_URL = "http://localhost:8001/summarize"
 
 @router.post("/{room_id}")
-async def get_room_summary(room_id: str):
+async def get_room_summary(room_id: str, access_token: str=Depends(token_verification)):
+    user_id=parse_access_token(access_token=access_token)
+
     file_path = os.path.join(TRANSCRIPTS_PATH, f"{room_id}_transcript.json")
     
     if not os.path.exists(file_path):

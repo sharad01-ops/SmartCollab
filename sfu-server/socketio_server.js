@@ -77,7 +77,26 @@ function initialize_socketio_Server(allowed_origins, server){
         socket.on("connect-Transcriber", async (props, callback)=>{
             console.log(chalk.green(`Transcriber client with id ${socket.id} connected`))
 
-            TranscriberConnectionHandler.connect(socket)
+            await TranscriberConnectionHandler.connect(socket)
+            if(TranscriberConnectionHandler.ready===true){
+                console.log(chalk.blueBright("TRANSCRIBER READY"))
+                // Rooms.set(room_id, {router, worker, WebRTCServer, peers, producers, consumers})
+                for(const [roomId, Room] of Rooms){
+                    const router=Room.router
+                    const producers=Room.producers
+                    for(const [key, val] of producers){
+                        if(val.kind==="audio"){
+                            TranscriberConnectionHandler.createConsumer(
+                                router, 
+                                val.id,
+                                `${roomId}`,
+                                val.appData.userId, 
+                                val.appData.userName
+                            )  
+                        }
+                    }
+                } 
+            }
             callback("connected Transport")
         })
 
@@ -153,17 +172,20 @@ function initialize_socketio_Server(allowed_origins, server){
                     const producer=await sendTransport.produce(
                         {
                             kind: kind,
-                            rtpParameters: rtpParameters
+                            rtpParameters: rtpParameters,
+                            appData: appData
                         }
                     )
                     if(kind=="audio"){
-                        TranscriberConnectionHandler.createConsumer(
-                            router, 
-                            producer.id,
-                            `${communityId}${channelId}`,
-                            appData.userId, 
-                            appData.userName
-                        )
+                        if(TranscriberConnectionHandler.ready===true){
+                            TranscriberConnectionHandler.createConsumer(
+                                router, 
+                                producer.id,
+                                `${communityId}${channelId}`,
+                                appData.userId, 
+                                appData.userName
+                            )
+                        }
                     }
                     console.log(chalk.blue(`${socket.id}: ${kind} Producer Created with prod_id ${producer.id}`))
                     producer.on("transportclose", ()=>{
@@ -210,10 +232,14 @@ function initialize_socketio_Server(allowed_origins, server){
                 const audio_producer=producers.get(producerId)
                 if(isOn===true){
                     await audio_producer?.resume()
-                    await TranscriberConnectionHandler.toggleConsumer(producerId, isOn)
+                    if(TranscriberConnectionHandler.ready===true){
+                        await TranscriberConnectionHandler.toggleConsumer(producerId, isOn)
+                    }
                 }else if(isOn===false){
                     await audio_producer?.pause()
-                    await TranscriberConnectionHandler.toggleConsumer(producerId, isOn)
+                    if(TranscriberConnectionHandler.ready===true){
+                        await TranscriberConnectionHandler.toggleConsumer(producerId, isOn)
+                    }
                 }
 
             })

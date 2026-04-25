@@ -12,11 +12,13 @@ transcriber/whisper/models/*
 transcriber/whisper/whisper.exe
 transcriber/whisper/whisper
 transcriber/storage/transcripts/*
-transcriber/PipelineTest/Output/*
-
 
 transcriber/PipelineTest/Output/*
-transcriber/storage/transcripts/*
+!transcriber/PipelineTest/Output/.gitkeep
+
+
+
+
 
 
 #keys and certificates

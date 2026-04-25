@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Response, Depends, HTTPException, status
-from RequestModels import user_credentials
+from RequestModels import user_credentials, user_search
 from auth.dependencies import token_verification
 from DB_Manipulation.user_operations import get_user_communities, get_user_with_uid, update_language_preference
 from DB_Manipulation.dependencies import get_db
+from database_models import Users
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 router = APIRouter()
 
@@ -59,3 +61,11 @@ def change_language_preference(new_language:str, token: str=Depends(token_verifi
 
     
     return {"Success":True}
+
+
+@router.post("/search")
+def get_matching_users(search_values:user_search, session:Session=Depends(get_db)):
+    query=select(Users).where(Users.user_name.ilike(f"%{search_values.user_name}%")).limit(20)
+    result=session.execute(query).scalars().all()
+
+    return result

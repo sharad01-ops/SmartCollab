@@ -60,7 +60,7 @@ class SFUConnectionHandler{
                     console.log(chalk.magenta(`Removed ${UserName} from Room ${roomId}`))
                     if(room.size==0){
                         this.Rooms.delete(roomId)
-                        this.HandleRoomClose(roomId)
+                        this.HandleRoomClose(roomId, ssrc)
 
                         if(this.Rooms.size==0){
                             if(this.ConvertChunksToWav){

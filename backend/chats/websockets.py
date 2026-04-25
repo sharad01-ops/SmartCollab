@@ -83,13 +83,14 @@ async def Broadcaster():
 
 class ConnectionManager:
     def __init__(self):
-        broadcaster_task=asyncio.create_task(Broadcaster())
-        asyncio.gather(broadcaster_task)
-
+        self.broadcaster_task=None
         self.active_connections: dict[str, WSClient]={}
         self.Rooms: dict[str, list[str]]={}
         self.connection_Rooms: dict[str, list[str]]={}
 
+    async def start(self):
+        self.broadcaster_task=asyncio.create_task(Broadcaster())
+        asyncio.gather(self.broadcaster_task)
 
     async def connect(self, websocket: WebSocket, wsClient: WSClient):
         await websocket.accept()
@@ -161,6 +162,14 @@ async def receiver(ws: WebSocket):
             if message_type=="Room":
                 Print.yellow(f"from UserId {ws.state.user_id}: {data}")
                 await manager.store_in_room(websocket=ws, community_id=data["communityId"], channel_id=data["channelId"])
+            
+            if message_type=="Community_Invite":
+                Print.yellow(f"from UserId {ws.state.user_id}: {data}")
+                await core.async_redis_api.redis_client.lpush(f"Notifications:{ws.state.user_id}", json.dumps(new_message))
+
+            if message_type=="Channel_Invite":
+                Print.yellow(f"from UserId {ws.state.user_id}: {data}")
+                await core.async_redis_api.redis_client.lpush(f"Notifications:{ws.state.user_id}", json.dumps(new_message))
             
             if message_type=="message":
                 new_message=get_message_correct_format(data=data, uid=ws.state.user_id, user_name=ws.state.user_name)

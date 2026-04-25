@@ -10,6 +10,7 @@ from database_operations import drop_all_tables, is_database_empty
 from utilities.colour_print import Print
 from chats.async_redis_operations import async_RedisAPI
 from chats.redis_operations import RedisAPI
+from chats.websockets import manager
 import core
 from dotenv import load_dotenv
 import os
@@ -22,37 +23,50 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    core.async_redis_api=async_RedisAPI(
-        host=os.getenv("REDIS_HOST"),
-        port=os.getenv("REDIS_PORT"),
-        password=os.getenv("REDIS_PASSWORD"),
-        username=os.getenv("REDIS_USERNAME")
-    )
+    try:
+        core.async_redis_api=async_RedisAPI(
+            host=os.getenv("REDIS_HOST"),
+            port=os.getenv("REDIS_PORT"),
+            password=os.getenv("REDIS_PASSWORD"),
+            username=os.getenv("REDIS_USERNAME")
+        )
 
-    core.redis_api=RedisAPI(
-        host=os.getenv("REDIS_HOST"),
-        port=os.getenv("REDIS_PORT"),
-        password=os.getenv("REDIS_PASSWORD"),
-        username=os.getenv("REDIS_USERNAME")
-    )
+        core.redis_api=RedisAPI(
+            host=os.getenv("REDIS_HOST"),
+            port=os.getenv("REDIS_PORT"),
+            password=os.getenv("REDIS_PASSWORD"),
+            username=os.getenv("REDIS_USERNAME")
+        )
 
-    core.redis_api.connect()
-    await core.async_redis_api.connect()
-    await core.async_redis_api.create_consumer_group(
-        stream_name="chat_broadcast", 
-        consumer_group_name="broadcast_consumers")
-    
-    core.async_redis_api_online=True
-    
-    yield
+        core.redis_api.connect()
+        await core.async_redis_api.connect()
+        await core.async_redis_api.create_consumer_group(
+            stream_name="chat_broadcast", 
+            consumer_group_name="broadcast_consumers")
+        
+        core.async_redis_api_online=True
 
-    await core.async_redis_api.close_connection()
-    core.async_redis_api=None
-    core.async_redis_api_online=False
-    core.redis_api.close_connection()
+        await manager.start()
+        
+        yield
+    except Exception as e:
+        Print.red(f"{e}")
+        raise
+    finally:
+        await core.async_redis_api.close_connection()
+        core.async_redis_api=None
+        core.async_redis_api_online=False
+        core.redis_api.close_connection()
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    Print.green("Backend server listening on port 8000")
+    # The server now listens on all network interfaces (0.0.0.0) at port 8000
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, lifespan="on")
 
 
 origins = [
@@ -112,6 +126,8 @@ def initialize_db():
 @app.get("/cors_test")
 def cors_test():
     return {"status": "ok"}
+
+
 
 
 Print.blue("============================================")

@@ -37,9 +37,11 @@ const router = createBrowserRouter([
     element:
     <QueryClientProvider client={query_client}>
         <ChatLayout_Context_Provider>
-          <WebSockets_ContextProvider>
+          
+            <WebSockets_ContextProvider>
             <ChatLayout />
           </WebSockets_ContextProvider>
+         
         </ChatLayout_Context_Provider>
     </QueryClientProvider>
 
@@ -48,7 +50,14 @@ const router = createBrowserRouter([
     children: [
       {
         path: ":channelId",
-        element: <ChatMessagesSection />,
+        element: 
+        
+          <ChatMessagesSection />
+
+      },
+      {
+        path:":channelId/videocall",
+        element: <VideoCallSection/>
       }
     ]
   }
@@ -56,7 +65,7 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById('root')).render(
     <Global_ContextProvider>
-      <RouterProvider router={router} />
+        <RouterProvider router={router} />
     </Global_ContextProvider>
   
 )

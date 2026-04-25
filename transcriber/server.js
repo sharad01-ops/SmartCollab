@@ -6,6 +6,8 @@ const dgram=require('dgram')
 const UserPipeline=require("./Pipeline")
 const PORT=process.env.PORT
 const SFU_URL=process.env.SFU_URL
+const fs=require('fs')
+const path=require('path')
 
 const app = express();
 const server = http.createServer(app);
@@ -19,8 +21,7 @@ const { default: chalk } = require('chalk');
 SFUConnectionHandler.connect({
                                 SFU_URL:SFU_URL, 
                                 HandleRoomClose, 
-                                CreateChunkStoreRoom,
-                                ConvertChunksToWav
+                                CreateChunkStoreRoom
                               })
 
 
@@ -82,12 +83,27 @@ setInterval(() => {
 }, 10);// call every 10ms
 
 
-function HandleRoomClose(roomId){
+function HandleRoomClose(roomId, ssrc){
   liveAudioService.handleRoomEnded(roomId)
-  //const transcripts=open transcripts.json
-  //if(transcripts.participants.length==1){
-  //delete transcripts.json
-//}
+  Pipelines.delete(ssrc)
+  const files = fs.readdirSync('./storage/transcripts');
+
+  const target = `${roomId}_transcript.json`;
+  if (files.includes(target)) {
+    const filename = `${roomId}_transcript.json`;
+    const new_file_name=`${roomId}_${Date.now()}_transcript.json`;
+    const filePath = path.join('./storage/transcripts', filename);
+    const new_filePath=path.join('./storage/transcripts', new_file_name);
+    
+    
+    fs.rename(filePath, new_filePath, (err) => {
+      if (err){
+        console.log(chalk.red(err))
+      }
+      console.log('Rename complete!');
+    });
+  }
+
   console.log(chalk.green("Room Closed. Transcriber Closed also"))
 }
 

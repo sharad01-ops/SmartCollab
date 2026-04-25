@@ -160,7 +160,7 @@ const CreateCommunityModal = ({setShowModal}) => {
   )
 }
 
-const GroupBar = ({ username, email }) => {
+const GroupBar = ({ username, email, channelOpen, setChannelOpen }) => {
   const scrollbarRef = useRef(null)
   const { theme, toggleTheme } = useContext(Global_Context)
   const {LeftCommunityRender}=useContext(ChatLayout_Context)
@@ -186,8 +186,8 @@ const GroupBar = ({ username, email }) => {
 
   return (
     <div className="w-full flex flex-col items-center gap-[12px] py-4 h-full overflow-hidden">
-
-      <div className="w-[44px] h-[44px] flex-shrink-0 rounded-[14px] flex items-center justify-center bg-transparent hover:bg-[rgba(255,255,255,0.08)] hover:scale-105 active:bg-[#E6D3B3] active:shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-all duration-250 cursor-pointer group">
+      
+      <div className="w-[44px] h-[44px] flex-shrink-0 rounded-[14px] flex items-center justify-center bg-transparent hover:bg-[rgba(255,255,255,0.08)] hover:scale-105 active:bg-[#E6D3B3] active:shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-all duration-250 cursor-pointer group" title="Search Communities" onClick={() => setShowSearchModal(true)}>
         <svg className="w-[20px] h-[20px] fill-[#DDE6E0] group-hover:fill-white group-active:fill-[#1F4D3A] transition-colors" viewBox="0 0 24 24">
           <circle cx="12" cy="6" r="3" />
           <circle cx="6" cy="12" r="3" />
@@ -198,7 +198,7 @@ const GroupBar = ({ username, email }) => {
 
       <FloatingDiv
         ToggleButtonComponent={() => (
-          <div className="w-[52px] h-[52px] flex-shrink-0 rounded-[16px] flex items-center justify-center bg-[rgba(255,255,255,0.08)] backdrop-blur-[8px] shadow-[0_8px_20px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.2)] hover:scale-[1.08] transition-all duration-250 cursor-pointer group">
+          <div className="w-[52px] h-[52px] flex-shrink-0 rounded-[16px] flex items-center justify-center bg-[rgba(255,255,255,0.08)] backdrop-blur-[8px] shadow-[0_8px_20px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.08)] hover:scale-[1.08] transition-all duration-250 cursor-pointer group" title="Add Community">
             <Plus className="w-[20px] h-[20px] flex-shrink-0 text-[#DDE6E0] group-hover:text-white transition-colors" strokeWidth={2} />
           </div>
         )}
@@ -227,6 +227,21 @@ const GroupBar = ({ username, email }) => {
           </button>
         </div>
       </FloatingDiv>
+      
+      {/* Sidebar Channel Toggle Button */}
+      <button 
+        onClick={() => setChannelOpen(prev => !prev)}
+        className="w-[44px] h-[44px] flex-shrink-0 rounded-[14px] flex items-center justify-center bg-[rgba(255,255,255,0.08)] backdrop-blur-[8px] shadow-[0_8px_20px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.1)] hover:scale-[1.08] transition-all duration-250 cursor-pointer group"
+        title="Toggle Channels"
+      >
+        <div className="text-[#DDE6E0] group-hover:text-white transition-colors">
+          {channelOpen ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg>
+          )}
+        </div>
+      </button>
 
       {/* Community list */}
       <div className="flex-1 w-full min-h-0 overflow-hidden">
@@ -247,7 +262,7 @@ const GroupBar = ({ username, email }) => {
       <div className="w-6 h-px bg-white/20 mt-2 mb-2 flex-shrink-0" />
 
       {/* User profile */}
-      <div className="flex-shrink-0 mt-auto" title={`${username}\n${email}`}>
+      <div className="flex-shrink-0 mt-auto">
         <UserProfile username={username} email={email} />
       </div>
 

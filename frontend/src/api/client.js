@@ -5,10 +5,11 @@ import { ApiError } from "./ApiError"
 
 async function throw_api_error(response){
     let errorData=null;
+    const text = await response.text();
     try{
-        errorData=await response.json();
+        errorData=JSON.parse(text);
     }catch{
-        errorData=await response.text();
+        errorData=text;
     }
 
     throw new ApiError({

@@ -10,7 +10,7 @@ import ScrollBar from "../common components/ScrollBar"
 import { WebsocketsContext } from "../../contexts/WebSockets-context-provider"
 import { wsClient } from "../../api/websocket"
 import useAppStore from "../../store/useAppStore"
-import { MessageArray_translate } from "../../services/translation_service"
+import { MessageArray_translate, translate } from "../../services/translation_service"
 
 
 
@@ -26,117 +26,162 @@ const ChatMessagesSection = () => {
   const [showScrollDown, setShowScrollDown] = useState(false)
   
   const language = useAppStore((state) => state.language)
-  const [translatedMessages, setTranslatedMessages] = useState([])
-  const translationCache = useRef({})
+  const globalCache = useAppStore((state) => state.translationCache)
+  const addToGlobalCache = useAppStore((state) => state.addToCache)
 
-  console.log("Current user language (Zustand):", language)
+  const [translatedMessages, setTranslatedMessages] = useState([])
+  const [isTranslating, setIsTranslating] = useState(false)
 
   const {data, isLoading, isError, error, refetch}=useQuery({
     queryKey: ["messages", communityId, channelId],
-    queryFn: ()=>{return get_channel_messages(communityId, channelId)},
+    queryFn: ()=>{
+      if (!communityId || !channelId) return null;
+      return get_channel_messages(communityId, channelId)
+    },
     enabled: !!channelId && !!communityId,
-    staleTime: 1000*60*1
+    staleTime: 1000*60*1,
+    retry: (failureCount, error) => {
+      if (error.status === 403 && failureCount < 1) return true;
+      return false;
+    }
   })
 
-  // Force re-translate when language changes
   useEffect(() => {
-    console.log("Language changed - Clearing cache and re-translating")
-    translationCache.current = {}
-  }, [language])
-
-  useEffect(() => {
+    let isCancelled = false
     const messages = data?.Messages
     if (!messages || messages.length === 0) {
       setTranslatedMessages([])
       return
     }
 
+    // 1. IMMEDIATELY show what we have (either original or from global cache)
+    const initialRender = messages.map(msg => ({
+      ...msg,
+      message: globalCache[`${msg.message}::${language}`] || msg.message
+    }))
+    setTranslatedMessages(initialRender)
+
+    // 2. Skip translation if English or all messages are already cached
+    if (language === 'en') {
+      setIsTranslating(false)
+      return
+    }
+
+    const uncachedMessages = messages.filter(msg => !globalCache[`${msg.message}::${language}`])
+    if (uncachedMessages.length === 0) {
+      setIsTranslating(false)
+      return
+    }
+
     async function handleTranslation() {
-      // Find messages that are NOT in the cache
-      const uncachedMessages = messages.filter(msg => !translationCache.current[`${msg.message}::${language}`])
-
-      if (uncachedMessages.length === 0) {
-        // All messages are in cache, just update the state
-        const cachedResults = messages.map(msg => ({
-          ...msg,
-          message: translationCache.current[`${msg.message}::${language}`]
-        }))
-        setTranslatedMessages(cachedResults)
-        return
-      }
-
+      setIsTranslating(true)
       try {
         const result = await MessageArray_translate(uncachedMessages, language)
         
-        // Update cache with new results
+        if (isCancelled) return 
+
+        // Update global cache
         result.forEach((res, index) => {
-          translationCache.current[`${uncachedMessages[index].message}::${language}`] = res.message
+          addToGlobalCache(uncachedMessages[index].message, res.message, language)
         })
 
-        // Construct final translated list using the cache
+        // Construct final list from global cache
         const finalMessages = messages.map(msg => ({
           ...msg,
-          message: translationCache.current[`${msg.message}::${language}`] || msg.message
+          message: globalCache[`${msg.message}::${language}`] || res.message // Note: using res.message here is a bit tricky, better to re-access cache but the state update is async
+        }))
+        // To be safe, we reconstruct using the results we just got plus existing cache
+        const resultsMap = {}
+        result.forEach((res, index) => {
+          resultsMap[`${uncachedMessages[index].message}::${language}`] = res.message
+        })
+
+        const combinedMessages = messages.map(msg => ({
+          ...msg,
+          message: resultsMap[`${msg.message}::${language}`] || globalCache[`${msg.message}::${language}`] || msg.message
         }))
 
-        setTranslatedMessages(finalMessages)
+        setTranslatedMessages(combinedMessages)
       } catch (err) {
         console.error("Translation error:", err)
-        setTranslatedMessages(messages)
+      } finally {
+        if (!isCancelled) setIsTranslating(false)
       }
     }
 
     handleTranslation()
-  }, [data?.Messages, language])
+
+    return () => { isCancelled = true }
+  }, [data?.Messages, language, globalCache])
 
 
-  const update_message_list=({type, sender_id, sender_name, community_id, channel_id, message, sent_at})=>{
-    if(!type || !sender_id || !community_id || !channel_id || !message) return
-    
-    const state = queryClient.getQueryState(["messages", String(community_id), String(channel_id)])
+  const [pendingTranslations, setPendingTranslations] = useState(new Set())
 
-    if(!state) return
+  const update_message_list = async ({ type, sender_id, sender_name, community_id, channel_id, message, sent_at }) => {
+    if (!type || !sender_id || !community_id || !channel_id || !message) return
 
+    // 1. Show original message IMMEDIATELY (Zero Delay)
     queryClient.setQueryData(
       ["messages", String(community_id), String(channel_id)],
       (old) => {
         const prev = old?.Messages ?? []
-        
         return {
           ...old,
-          Messages: [...prev, {type, sender_id:sender_id==user_id?"user":sender_id, sender_name, community_id, channel_id, sent_at, message, is_new_message:true} ],
+          Messages: [...prev, { type, sender_id: sender_id == user_id ? "user" : sender_id, sender_name, community_id, channel_id, sent_at, message, is_new_message: true }],
         }
       }
     )
 
+    // 2. Background translation for this specific message
+    if (language !== 'en') {
+      const cacheKey = `${message}::${language}`
+      if (!globalCache[cacheKey]) {
+        try {
+          const messageId = `${sent_at}-${sender_id}`; // Pseudo-id
+          setPendingTranslations(prev => new Set(prev).add(messageId))
+          
+          const res = await translate(message, language)
+          addToGlobalCache(message, res.translated, language)
+          
+          // Re-update the UI with translated text
+          queryClient.setQueryData(
+            ["messages", String(community_id), String(channel_id)],
+            (old) => ({
+              ...old,
+              Messages: (old?.Messages ?? []).map(m => 
+                (m.sent_at === sent_at && m.message === message) ? { ...m, message: res.translated } : m
+              )
+            })
+          )
+          setPendingTranslations(prev => {
+             const next = new Set(prev);
+             next.delete(messageId);
+             return next;
+          })
+        } catch (e) {
+          console.error("BG translation failed:", e)
+        }
+      }
+    }
   }
 
-
-
-  useEffect(()=>{
-    if(!communityId) return
-    if(isError){
-      setCommunityChannelMap( (prev)=>{
-          return {...prev, [communityId]:null }
-      } )
+  useEffect(() => {
+    if (!communityId) return
+    if (isError) {
+      setCommunityChannelMap((prev) => {
+        return { ...prev, [communityId]: null }
+      })
     }
+  }, [isError, error])
 
-  },[isError, error])
-
-
-  useEffect(()=>{
-
-    if(wsClient && communityId && channelId){
-      console.log("subscribing")
+  useEffect(() => {
+    if (wsClient && communityId && channelId) {
       wsClient.subscribe("session_messages", update_message_list)
     }
-    
-    
-  },[communityId, channelId])
+  }, [communityId, channelId, language])
 
-  useEffect(()=>{
-
-    if(scrollbarRef.current){ 
+  useEffect(() => {
+    if (scrollbarRef.current) {
       scrollbarRef.current.scrollToBottom()
       setShowScrollDown(false)
     }
@@ -150,28 +195,21 @@ const ChatMessagesSection = () => {
   }
 
   const handleScrollToBottom = () => {
-    if(scrollbarRef.current){ 
+    if (scrollbarRef.current) {
       scrollbarRef.current.scrollToBottom()
       setShowScrollDown(false)
     }
   }
 
-
-
-  const sendMessage=(value)=>{
-    if(!value || !wsClient) return
-    wsClient.send(
-      { 'type': 'message', 
-        'communityId': communityId, 
-        'channelId': channelId, 
-        "message":value})
-    console.log("message Sent: ", value)
+  const sendMessage = (value) => {
+    if (!value || !wsClient) return
+    wsClient.send({ 'type': 'message', 'communityId': communityId, 'channelId': channelId, "message": value })
   }
 
-  let prev_sent_date=" "
-  let date_change=false
+  let prev_sent_date = " "
+  let date_change = false
 
-  if(isError){
+  if (isError) {
     throw error
   }
 
@@ -179,7 +217,7 @@ const ChatMessagesSection = () => {
     return (
       <div className="w-full h-full flex flex-col">
         <ChatHeader />
-        <div className="flex-1 bg-[#F5F3EF] flex justify-center items-center">
+        <div className="flex-1 bg-[#F5F3EF] flex flex-col justify-center items-center gap-3">
           <div className="w-6 h-6 border-2 border-[#2F5D50]/20 border-t-[#2F5D50] rounded-full animate-spin" />
         </div>
         <MessageBar onEnter_callback={sendMessage} />
@@ -188,55 +226,50 @@ const ChatMessagesSection = () => {
   }
 
   return (
-    <div className="bg-transparent w-full h-full flex flex-col items-center">
-      <div className="w-full flex-shrink-0">
-        <ChatHeader 
-          queryClient={queryClient}
-        />
+    <div className="chat-section bg-transparent w-full">
+      <div className="w-full flex-shrink-0 relative">
+        <ChatHeader queryClient={queryClient} />
       </div>
 
-      <div className="flex-1 w-full overflow-y-auto custom-scrollbar flex flex-col pt-4 relative">
+      <div className="messages-container flex-1 w-full pt-4 relative">
         <ScrollBar ref={scrollbarRef} onScroll={handleScroll}>
           <div className="w-full flex flex-col items-center justify-center min-h-full">
             <div className="space-y-0 flex flex-col py-6 px-8 w-full bg-transparent">
-              {
-              translatedMessages.map((msg, i) => {
-                    const CurrentSentDate=new Date(msg.sent_at).toLocaleDateString('en-IN', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                      })
-                    if(prev_sent_date && CurrentSentDate!=prev_sent_date && CurrentSentDate!="Invalid Date"){
-                      date_change=true
-                      prev_sent_date=CurrentSentDate
-                    }else{
-                      date_change=false
-                    }
-                    return (
-                      <div key={i}>
-                        {
-                          date_change && prev_sent_date &&
-                          <div className="text-[var(--sc-on-surface-muted)] py-4 w-full flex justify-center text-xs font-medium">
-                            <div className="bg-white/50 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20">
-                              {
-                                prev_sent_date
-                              }
-                            </div>
-                          </div>
-                        }
-                        <TextBox
-                          fromUser={msg.sender_id == "user"}
-                          message={msg.message}
-                          sender_id={msg.sender_id}
-                          sender_name={msg.sender_name}
-                          sent_at={msg.sent_at}
-                          is_new_message={msg.is_new_message}
-                        />
+              {translatedMessages.map((msg, i) => {
+                const messageId = `${msg.sent_at}-${msg.sender_id}`;
+                const isPending = pendingTranslations.has(messageId);
+                
+                const CurrentSentDate = new Date(msg.sent_at).toLocaleDateString('en-IN', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
+                })
+                if (prev_sent_date && CurrentSentDate != prev_sent_date && CurrentSentDate != "Invalid Date") {
+                  date_change = true
+                  prev_sent_date = CurrentSentDate
+                } else {
+                  date_change = false
+                }
+                return (
+                  <div key={i} className={isPending ? "opacity-70 animate-pulse" : ""}>
+                    {date_change && prev_sent_date && (
+                      <div className="text-[var(--sc-on-surface-muted)] py-4 w-full flex justify-center text-xs font-medium">
+                        <div className="bg-white/50 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20">
+                          {prev_sent_date}
+                        </div>
                       </div>
-                    )
-                  }
+                    )}
+                    <TextBox
+                      fromUser={msg.sender_id == "user"}
+                      message={msg.message}
+                      sender_id={msg.sender_id}
+                      sender_name={msg.sender_name}
+                      sent_at={msg.sent_at}
+                      is_new_message={msg.is_new_message}
+                    />
+                  </div>
                 )
-              }
+              })}
             </div>
           </div>
         </ScrollBar>

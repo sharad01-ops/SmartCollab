@@ -9,6 +9,7 @@ function sleep(ms) {
 }
 
 export async function get_channel_messages(communityId, channelId) {
+    console.log(`Fetching messages for Comm: ${communityId}, Chan: ${channelId}`);
 
     const data= await FetchRequest(
             BASE_URL, `/channels/${communityId}/${channelId}`,

@@ -51,6 +51,9 @@ class WebRTCAPI{
 
 
     connect=(commid, channelid, userid, username, setLocalStreams, setVideoStreams, setAudioStreams, setScreenShareToggle)=>{
+        console.log("CALL STARTED");
+        console.log("Connecting to room:", commid, channelid);
+        
         this.community_id=commid
         this.channel_id=channelid
         this.userid=userid
@@ -59,10 +62,10 @@ class WebRTCAPI{
         this.setVideoStreams=setVideoStreams
         this.setAudioStreams=setAudioStreams
         this.setScreenShareToggle=setScreenShareToggle
+        
         socketio_client.connect()
 
         socketio_client.on("getRtpCapabilities", this.get_rtpCapabilities)
-
         socketio_client.on("createTransports", this.create_Transports)
     }
 
@@ -119,12 +122,13 @@ class WebRTCAPI{
         console.log(chalk.yellow("recieved rtpCapabilities: "),capabilities)
         try{
             const device_rtpcap=await this.create_device(capabilities)
-            console.log(chalk.green("device rtpCapabilities: "),device_rtpcap)
+            console.log(chalk.green("device rtpCapabilities created: "),device_rtpcap)
 
+            console.log("Emitting createWebRtcTransport...");
             socketio_client.emit("createWebRtcTransport", {communityId:this.community_id, channelId:this.channel_id, rtpCapabilities:device_rtpcap})
 
         }catch(e){
-            console.error(e)
+            console.error("Error in get_rtpCapabilities:", e)
             if (e.name === 'UnsupportedError'){
                 console.warn('browser not supported')
             }
@@ -227,6 +231,7 @@ class WebRTCAPI{
         try{
             this.sendTransport=this.create_SendTransport(sendTransportParams)
             this.recieveTransport=this.create_RecvTransport(recvTransportParams)
+            console.log("TRANSPORT CREATED");
 
 
             this.sendTransport.on("connect", ({dtlsParameters}, callback, errback )=>{
@@ -446,12 +451,12 @@ class WebRTCAPI{
 
 
 
-    ToggleVideo=async (isOff)=>{
-        if(this.Local_Tracks.video?.enabled){
-            this.Local_Tracks.video.enabled=isOff
+    ToggleVideo=async (isOn)=>{
+        if(this.Local_Tracks.video){
+            this.Local_Tracks.video.enabled=isOn
         }
         const videoProducer=this.producers.get("cam_feed")
-        if(isOff && videoProducer){
+        if(!isOn && videoProducer){
             await videoProducer.pause()
 
             socketio_client.emit("ToggleVideoProducer", {
@@ -461,7 +466,7 @@ class WebRTCAPI{
 
             console.log(chalk.green("Camera Off"))
 
-        }else if(videoProducer){
+        }else if(isOn && videoProducer){
             await videoProducer.resume()
 
             socketio_client.emit("ToggleVideoProducer", {
@@ -474,13 +479,13 @@ class WebRTCAPI{
         }
     }
 
-    ToggleAudio=async (ismuted)=>{
-        if(this.Local_Tracks.audio?.enabled){
-            this.Local_Tracks.audio.enabled=ismuted
+    ToggleAudio=async (isOn)=>{
+        if(this.Local_Tracks.audio){
+            this.Local_Tracks.audio.enabled=isOn
         }
         
         const audioProducer=this.producers.get("mic_feed")
-        if(ismuted && audioProducer){
+        if(!isOn && audioProducer){
             await audioProducer.pause()
 
             socketio_client.emit("ToggleAudioProducer", {
@@ -490,7 +495,7 @@ class WebRTCAPI{
 
             console.log(chalk.green("Mic Paused"))
 
-        }else if(audioProducer){
+        }else if(isOn && audioProducer){
             await audioProducer.resume()
 
             socketio_client.emit("ToggleAudioProducer", {

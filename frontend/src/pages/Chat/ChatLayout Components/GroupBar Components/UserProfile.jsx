@@ -64,13 +64,15 @@ const UserProfile = ({ username, email }) => {
   }
 
   const confirmLanguageChange = () => {
-    // Instant UI update
-    setLanguage(pendingLang)
+    const newLang = pendingLang
     setShowLangConfirm(false)
     setPendingLang(null)
-
-    // Background sync with backend
-    change_preferred_language(pendingLang).catch((error) => {
+    
+    // 1. Update local state and localStorage IMMEDIATELY (Smooth Transition)
+    setLanguage(newLang)
+    
+    // 2. Sync with backend in the background (no reload needed)
+    change_preferred_language(newLang).catch((error) => {
       console.error('Failed to sync language preference with backend:', error)
     })
   }

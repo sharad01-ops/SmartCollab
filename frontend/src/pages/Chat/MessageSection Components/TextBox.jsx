@@ -30,7 +30,7 @@ const TextBox = ({ fromUser = null, message = null, sender_id = null,sender_name
         {fromUser ? (
           <div className="flex flex-col items-end w-full">
             <div className="flex items-center justify-end w-full">
-              <div className="bg-[#173C2F] text-white px-3.5 py-2.5 rounded-[16px] rounded-tr-[4px] max-w-[420px] shadow-[0_2px_8px_rgba(0,0,0,0.06)] text-[15px] leading-relaxed">
+              <div className="message-bubble bg-[#173C2F] text-white px-3.5 py-2.5 rounded-[16px] rounded-tr-[4px] shadow-[0_2px_8px_rgba(0,0,0,0.06)] text-[15px] leading-relaxed">
                 {message}
               </div>
             </div>
@@ -41,7 +41,7 @@ const TextBox = ({ fromUser = null, message = null, sender_id = null,sender_name
         ) : (
           <div className="flex flex-col items-start w-full">
             <div className="flex items-center justify-start w-full">
-              <div className="bg-[#f0f2f1] text-gray-800 px-3.5 py-2.5 rounded-[16px] rounded-tl-[4px] max-w-[420px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[15px] leading-relaxed">
+              <div className="message-bubble bg-[#f0f2f1] text-gray-800 px-3.5 py-2.5 rounded-[16px] rounded-tl-[4px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[15px] leading-relaxed">
                 {message}
               </div>
             </div>

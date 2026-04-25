@@ -5,10 +5,12 @@ import { useEffect, useRef, useCallback, useState, useContext } from "react"
 import { webrtc_client } from "../../api/webrtc_client"
 import chalk from "chalk"
 import { ChatLayout_Context } from "../../contexts/ChatLayout-context-provider"
+import { useCallStore } from "../../store/useCallStore"
 
 const Header=()=>{
     const navigate=useNavigate()
     const url_params=useParams()
+    const { endCall } = useCallStore()
     return(
         <div className="w-full h-full flex flex-row justify-start items-center bg-gray-800 max-h-[2.5rem] ">
             <button
@@ -17,6 +19,7 @@ const Header=()=>{
                     if(!url_params
                         || !url_params.communityId || !url_params.channelId
                     ) return
+                    endCall()
                     navigate(`/chats/${url_params.communityId}/${url_params.channelId}`)
                 }}
             >
@@ -49,14 +52,14 @@ const LocalVideoPlayer=({streamName, stream, setScreenShareToggle, ScreenShareTo
 
     useEffect(()=>{
         const muteMic=async ()=>{
-            await webrtc_client.ToggleAudio(MicMuted)
+            await webrtc_client.ToggleAudio(!MicMuted) // Reverting logic to use isOn
         }
         muteMic()
     },[MicMuted])
 
     useEffect(()=>{
         const camOff=async ()=>{
-            await webrtc_client.ToggleVideo(CamOff)
+            await webrtc_client.ToggleVideo(!CamOff) // Reverting logic to use isOn
         }
         camOff()
     },[CamOff])
@@ -180,16 +183,12 @@ const VideoPanel=()=>{
             url_params.channelId, 
             user_id, 
             user_name,
-            setLocalStreams, 
+            (streams) => setLocalStreams(new Map(streams)), 
             setRemoteVideoStreams, 
             setRemoteAudioStreams,
             setScreenShareToggle
         )
         console.log("mounted")
-        // socketio_client.on("getRtpCapabilities",LogRtpCapabilities)
-        // socketio_client.on("createSendTransport", LogTransportParams)
-
-        // socketio_client.on("createRecvTransport", createRecieveTransport)
         
         return ()=>cleanup()
     },[])
@@ -204,29 +203,38 @@ const VideoPanel=()=>{
             <div className="flex flex-row w-fit">
                 <div className="flex flex-col">
                     <button
-                        className="bg-black text-white rounded-2xl px-3 py-1 m-1 hover:bg-gray-800 h-fit w-fit"
+                        className="bg-black text-white rounded-2xl px-3 py-1 m-1 hover:bg-gray-800 h-fit w-fit flex flex-col items-center gap-1"
                         onClick={()=>{
-                            if(webrtc_client.device) return
+                            if(webrtc_client.device) {
+                                console.log("WebRTC Device already exists, skipping join_room");
+                                return;
+                            }
+                            if (!socketio_client.socket?.connected) {
+                                console.error("Socket NOT connected. Cannot join room.");
+                                alert("Connecting to server... please wait a moment.");
+                                return;
+                            }
+                            console.log("Manually joining room:", url_params.communityId, url_params.channelId);
                             socketio_client.emit("join_room", {communityId:url_params.communityId, channelId:url_params.channelId})
                         }}
                     >
-                        connect
+                        <span>Connect</span>
+                        {!socketio_client.socket?.connected && <span className="text-[10px] text-red-400">(Offline)</span>}
                     </button>
                     
                 </div>
-                {/* <span className="p-1 bg-white w-[200px] max-w-[200px] h-[200px] max-h-[200px] overflow-y-auto whitespace-pre-wrap">{SocketLogs}</span> */}
             </div>
             <div
                 className="w-full flex flex-col bg-green-500 justify-center"
             >
                 
                 {
-                    LocalStreams.length>0 &&
+                    [...LocalStreams].length>0 &&
                     (
                         <>
                         <div>You</div>
                         {
-                            LocalStreams.map(([key, value], index)=>{
+                            [...LocalStreams].map(([key, value], index)=>{
                                 return(
                                     <LocalVideoPlayer 
                                         streamName={key} 
@@ -270,7 +278,8 @@ const VideoPanel=()=>{
                 { RemoteAudioStreams.map((audio_stream, index)=>{
                     return(
                         <RemoteAudioPlayer 
-                            stream={audio_stream} key={index} callback={()=>{console.log(chalk.green("Mounted Remote Video Stream"))}}
+                            stream={audio_stream} key={index} callback={()=>{console.log(chalk.green("Mounted Remote Video Stream"))
+                        }}
                         />
                     )
                 }) }

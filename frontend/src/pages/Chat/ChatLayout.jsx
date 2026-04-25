@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState, Suspense } from "react";
-import { Outlet, useParams, useNavigate } from "react-router-dom"
+import { Outlet, useParams, useNavigate, useLocation } from "react-router-dom"
 import {EmptyChatSection} from "./EmptyChatSection";
 
 import GroupBar from "./ChatLayout Components/GroupBar";
@@ -10,6 +10,9 @@ import { useAsyncError } from "../../hooks/ErrorHooks";
 import { useUserInfo } from "../../hooks/user_hooks";
 import { ChatLayout_Context } from "../../contexts/ChatLayout-context-provider";
 import { Global_Context } from "../../contexts/Global-context-provider";
+import { useCallStore } from "../../store/useCallStore";
+import MinimizedCall from "./MinimizedCall";
+import VideoCallSection from "./VideoCallSection";
 
 const ChatLayout = () => {
     const {getUserProfile}=useUserInfo()
@@ -21,7 +24,10 @@ const ChatLayout = () => {
     const {communityId, channelId}=useParams();
 
     const [UserProfile, setUserProfile]=useState(null)
-    const [UserCommunities, setUserCommunities]=useState(null)
+    const [channelOpen, setChannelOpen] = useState(true);
+
+    // Call Store integration
+    const { callActive, minimized, maximized } = useCallStore();
     
   
     useEffect(()=>{
@@ -51,10 +57,10 @@ const ChatLayout = () => {
 
   if (!UserProfile ) {
     return (
-      <div className="h-screen w-full p-4 flex items-center bg-[#152e24]">
+      <div className="chat-wrapper p-4 bg-[#152e24]">
         {/* Sidebar Container */}
         <div 
-          className="w-[68px] h-full flex flex-col flex-shrink-0 z-20 items-center py-4 rounded-[28px] border border-[rgba(255,255,255,0.1)]"
+          className="w-[68px] h-full flex flex-col flex-shrink-0 z-20 items-center py-4 rounded-[28px] border border-[rgba(255,255,255,0.1)] mr-4"
           style={{
             background: 'linear-gradient(180deg, #1F4D3A 0%, #153C2E 100%)',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 12px 30px rgba(0,0,0,0.25)'
@@ -63,14 +69,13 @@ const ChatLayout = () => {
           <GroupBar username={UserProfile?.username || ""} email={UserProfile?.email || ""} />
         </div>
         
-        {/* Partition Space */}
-        <div className="w-4 h-full flex-shrink-0 bg-transparent" />
-        
-        <div className="flex-1 h-full rounded-[32px] overflow-hidden bg-[#f8f8f8] shadow-[inset_0_4px_24px_rgba(0,0,0,0.02)] flex flex-row">
-          <div className="w-[320px] h-full flex-shrink-0 bg-[#f5f6f5] border-r border-gray-100">
-            <ChannelsPanel />
+        <div className="main-workspace-card rounded-[32px] bg-[#f8f8f8] shadow-[inset_0_4px_24px_rgba(0,0,0,0.02)]">
+          <div className="channels-panel-wrapper bg-[#f5f6f5] border-r border-gray-100">
+            <div className="w-[280px] h-full">
+              <ChannelsPanel />
+            </div>
           </div>
-          <div className="flex-1 h-full bg-[#F8F8F8] flex flex-col">
+          <div className="chat-section bg-[#F8F8F8]">
             {channelId ? <Outlet /> : <EmptyChatSection />}
           </div>
         </div>
@@ -79,10 +84,11 @@ const ChatLayout = () => {
   }
 
   return (
-    <div className="h-screen w-full p-4 flex items-center bg-[#152e24]">
+    <div className="chat-wrapper p-4 bg-[#152e24]">
+
       {/* Sidebar Container */}
       <div 
-        className="w-[68px] h-full flex flex-col flex-shrink-0 z-20 items-center py-4 rounded-[28px] border border-[rgba(255,255,255,0.1)] transition-all"
+        className="w-[68px] h-full flex flex-col flex-shrink-0 z-20 items-center py-4 rounded-[28px] border border-[rgba(255,255,255,0.1)] transition-all mr-4"
         style={{
           background: 'linear-gradient(180deg, #1F4D3A 0%, #153C2E 100%)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 12px 30px rgba(0,0,0,0.25)'
@@ -91,27 +97,54 @@ const ChatLayout = () => {
         <GroupBar
           username={UserProfile.username}
           email={UserProfile.email}
+          channelOpen={channelOpen}
+          setChannelOpen={setChannelOpen}
         />
       </div>
       
-      {/* Partition Space */}
-      <div className="w-4 h-full flex-shrink-0 bg-transparent" />
-      
       {/* Main Workspace Card */}
-      <div className="flex-1 h-full rounded-[32px] overflow-hidden bg-[#f8f8f8] shadow-[inset_0_4px_24px_rgba(0,0,0,0.02),0_10px_30px_rgba(0,0,0,0.2)] flex flex-row font-[Inter] text-[var(--sc-text-primary)]">
+      <div className="main-workspace-card rounded-[32px] bg-[#f8f8f8] shadow-[inset_0_4px_24px_rgba(0,0,0,0.02),0_10px_30px_rgba(0,0,0,0.2)] font-[Inter] text-[var(--sc-text-primary)]">
         
-        {/* Channels Panel - Subdued light grey */}
-        <div className="w-[300px] h-full flex-shrink-0 bg-[#f5f6f5] border-r border-gray-100">
-          <ChannelsPanel />
-        </div>
+        {/* Channels Panel - Persistent Width Toggle */}
+        {!maximized && (
+          <div 
+            className="channels-panel-wrapper bg-[#f5f6f5] border-r border-gray-100"
+            style={{ width: channelOpen ? "280px" : "0px" }}
+          >
+            <div className="w-[280px] h-full"> {/* Inner constraint to keep content size stable */}
+              <ChannelsPanel />
+            </div>
+          </div>
+        )}
         
-        {/* Chat Area - Focused light background */}
-        <div className="flex-1 h-full bg-[#F8F8F8] flex flex-col relative">
-          {channelId ? <Outlet /> : <EmptyChatSection />}
+        {/* Chat Section Area */}
+        <div className="chat-section relative">
+          
+          {/* 1. CHAT AREA (Visible if no active call or if call is minimized/maximized) */}
+          {(!callActive || minimized) && (
+            channelId ? <Outlet /> : <EmptyChatSection />
+          )}
+
+          {/* 2. VIDEO CALL (SINGLE INSTANCE) */}
+          {callActive && (
+            <div
+              className={`
+                ${maximized ? "fixed inset-0 z-50 p-4 bg-[#152e24]" : "absolute inset-0 z-40"}
+                ${minimized ? "hidden" : "block"}
+              `}
+            >
+                <VideoCallSection />
+            </div>
+          )}
+
+          {/* 3. MINIMIZED CALL (Floating Window) */}
+          {callActive && minimized && (
+            <MinimizedCall />
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-export { ChatLayout }
+export default ChatLayout

@@ -4,11 +4,14 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { EllipsisVertical, Video, Hash, LogOut, Search } from 'lucide-react'
 import FloatingDiv from '../../common components/FloatingDiv'
 import { leave_channel } from '../../../services/channel_services'
+import { useCallStore } from '../../../store/useCallStore'
+import { WebsocketsContext } from '../../../contexts/WebSockets-context-provider'
 
 const ChatHeader = ({queryClient}) => {
   const navigate = useNavigate()
   const url_params = useParams()
   const {setLeftChannel, LeftChannelRender, setLeftChannelRender}=useContext(ChatLayout_Context)
+  const { startCall } = useCallStore()
 
   return (
     <div className="py-4 h-[72px] w-full flex-shrink-0 flex items-center px-8 justify-between border-b border-black/[0.05] bg-transparent">
@@ -26,7 +29,10 @@ const ChatHeader = ({queryClient}) => {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-6">
-        <Video className="w-5 h-5 text-[#1c332b] cursor-pointer hover:opacity-70 transition-opacity" onClick={() => navigate(`/chats/${url_params.communityId}/${url_params.channelId}/videocall`)} />
+        <Video 
+          className="w-5 h-5 text-[#1c332b] cursor-pointer hover:opacity-70 transition-opacity" 
+          onClick={() => startCall(url_params.communityId, url_params.channelId)} 
+        />
         <div className="w-px h-5 bg-gray-200" />
         <FloatingDiv
           ToggleButtonComponent={() => (
